@@ -1,23 +1,48 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="auto">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="icon" href="/logo.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <title>Batch 1:1 + Blur BG + Watermark + Logo </title>
+  <title>Batch 1:1 + Blur BG + Watermark + Logo</title>
+
+  <!-- ===== NO-FLICKER THEME + LANG (MUST BE BEFORE CSS) ===== -->
+  <script>
+    (function(){
+      try{
+        const savedTheme = localStorage.getItem("theme") || "auto"; // auto|light|dark
+        document.documentElement.setAttribute("data-theme", savedTheme);
+
+        const savedLang = localStorage.getItem("lang") || "vi"; // vi|en
+        document.documentElement.setAttribute("lang", savedLang);
+
+        // optional: avoid transitions on first paint
+        document.documentElement.classList.add("preload");
+        window.addEventListener("load", ()=> {
+          setTimeout(()=> document.documentElement.classList.remove("preload"), 30);
+        });
+      }catch(e){}
+    })();
+  </script>
 
   <!-- 100% Material Icons -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,650,0,0" />
 
   <style>
+    /* avoid flicker transitions on first paint */
+    html.preload *{
+      transition: none !important;
+      animation: none !important;
+    }
+
     :root{
       color-scheme: light dark;
 
       --r: 22px;
       --r2: 26px;
 
-      /* ===== TRUE DARK ===== */
+      /* ===== TRUE DARK (default) ===== */
       --bg0:#05070c;
       --txt: rgba(255,255,255,.94);
       --muted: rgba(255,255,255,.68);
@@ -40,11 +65,12 @@
       --snack: rgba(0,0,0,.72);
 
       --grid: rgba(255,255,255,.05);
+      --tap: 46px;
     }
 
+    /* ===== AUTO THEME: if user chose auto -> follow system ===== */
     @media (prefers-color-scheme: light){
-      :root{
-        /* ===== TRUE LIGHT ===== */
+      :root[data-theme="auto"]{
         --bg0:#ffffff;
         --txt: rgba(17,24,39,.94);
         --muted: rgba(17,24,39,.64);
@@ -62,7 +88,35 @@
 
         --snack: rgba(17,24,39,.80);
         --grid: rgba(17,24,39,.06);
+
+        color-scheme: light;
       }
+    }
+
+    /* ===== FORCE LIGHT/DARK by user selection ===== */
+    :root[data-theme="light"]{
+      --bg0:#ffffff;
+      --txt: rgba(17,24,39,.94);
+      --muted: rgba(17,24,39,.64);
+
+      --panel: rgba(255,255,255,.78);
+      --panel2: rgba(246,247,251,.92);
+      --line: rgba(17,24,39,.12);
+
+      --shadow-sm: 0 12px 30px rgba(17,24,39,.12);
+      --shadow: 0 24px 70px rgba(17,24,39,.14);
+
+      --accentA: rgba(59,130,246,.12);
+      --accentB: rgba(168,85,247,.10);
+      --accentLine: rgba(59,130,246,.24);
+
+      --snack: rgba(17,24,39,.80);
+      --grid: rgba(17,24,39,.06);
+
+      color-scheme: light;
+    }
+    :root[data-theme="dark"]{
+      color-scheme: dark;
     }
 
     *{ box-sizing:border-box; }
@@ -73,7 +127,6 @@
       color: var(--txt);
       background: var(--bg0);
 
-      /* nền pro hơn: gradient + grid */
       background-image:
         radial-gradient(900px 520px at 18% 0%, rgba(125,211,252,.18), transparent 60%),
         radial-gradient(820px 520px at 95% 15%, rgba(167,139,250,.14), transparent 60%),
@@ -150,6 +203,16 @@
       display:flex; gap:8px; align-items:center; flex-wrap: wrap;
     }
 
+    /* ===== Mobile optimize topbar ===== */
+    @media (max-width: 520px){
+      .app{ padding: 14px; padding-bottom: 150px; }
+      .topbar-inner{ padding: 12px; border-radius: 22px; }
+      .brand{ min-width: 0; flex: 1 1 auto; }
+      .sub{ display:none; }
+      h1{ font-size: 14px; }
+      .mark{ width:42px; height:42px; border-radius: 16px; }
+    }
+
     /* ===== Buttons ===== */
     .btn{
       border:1px solid var(--line);
@@ -166,6 +229,7 @@
       gap:10px;
       user-select:none;
       white-space: nowrap;
+      min-height: var(--tap);
     }
     .btn:hover{ background: rgba(255,255,255,.10); }
     .btn:active{ transform: scale(.98); }
@@ -185,9 +249,26 @@
       border-color: rgba(239,68,68,.35);
       background: rgba(239,68,68,.10);
     }
-    .btn.mini{ padding: 9px 12px; border-radius: 14px; font-size: 12px; }
+    .btn.mini{ padding: 9px 12px; border-radius: 14px; font-size: 12px; min-height: 40px; }
     .btn .ms{ font-size: 20px; opacity:.95; }
     .btn.mini .ms{ font-size: 18px; }
+
+    /* topbar actions on very small screens: horizontal scroll */
+    .topActions{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+    }
+    @media (max-width: 520px){
+      .topActions{
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+        justify-content: flex-start;
+        mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+      }
+      .topActions::-webkit-scrollbar{ height: 0; }
+    }
 
     /* ===== Cards ===== */
     .card{
@@ -217,20 +298,21 @@
     label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
     .field{
       width:100%;
-      padding: 11px 12px;
+      padding: 12px 12px;
       border-radius: 16px;
       border:1px solid var(--line);
       background: rgba(255,255,255,.06);
       color: var(--txt);
       outline:none;
       transition: border-color .2s ease, background .2s ease;
+      min-height: var(--tap);
     }
     .field:focus{
       border-color: rgba(125,211,252,.45);
       background: rgba(255,255,255,.09);
     }
 
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
     @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
 
     .row{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -308,6 +390,22 @@
       align-items:center;
     }
 
+    /* Result action buttons on mobile: scroll */
+    .actionRow{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    @media (max-width: 520px){
+      .actionRow{
+        width:100%;
+        flex-wrap: nowrap;
+        overflow-x:auto;
+        -webkit-overflow-scrolling: touch;
+        justify-content:flex-start;
+        padding-bottom:2px;
+      }
+      .actionRow::-webkit-scrollbar{ height: 0; }
+    }
+
     /* ===== Thumbs ===== */
     .thumbs{
       display:grid;
@@ -318,7 +416,6 @@
     @media (max-width: 860px){ .thumbs{ grid-template-columns: repeat(3,  1fr); } }
     @media (max-width: 640px){ .thumbs{ grid-template-columns: repeat(2,  1fr); } }
 
-    /* Kết quả full ngang: tăng cột để nhìn “đã” */
     @media (min-width: 1024px){
       #thumbsOut.thumbs{ grid-template-columns: repeat(7, 1fr); }
     }
@@ -334,11 +431,18 @@
       box-shadow: 0 12px 26px rgba(0,0,0,.18);
       display:flex;
       flex-direction: column;
+      position: relative;
     }
     .imgWrap{
       position:relative;
       aspect-ratio: 1/1;
       background: rgba(255,255,255,.04);
+    }
+    .imgWrap::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(120% 90% at 40% 10%, rgba(255,255,255,.10), transparent 55%);
+      pointer-events:none;
     }
     .thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
 
@@ -359,10 +463,9 @@
     }
     .xbtn:hover{ background: rgba(0,0,0,.62); }
     .xbtn:active{ transform: scale(.96); }
-    @media (prefers-color-scheme: light){
-      .xbtn{ background: rgba(255,255,255,.85); border-color: rgba(0,0,0,.10); }
-      .xbtn:hover{ background: rgba(255,255,255,.96); }
-    }
+
+    :root[data-theme="light"] .xbtn{ background: rgba(255,255,255,.88); border-color: rgba(0,0,0,.10); }
+    :root[data-theme="light"] .xbtn:hover{ background: rgba(255,255,255,.98); }
 
     .meta{ padding: 10px 10px 12px; display:flex; flex-direction: column; gap: 8px; }
     .name{ font-size: 12px; line-height: 1.25; word-break: break-word; color: var(--txt); opacity:.95; }
@@ -386,8 +489,9 @@
       opacity:.92;
       user-select:none;
       cursor:pointer;
+      min-height: var(--tap);
     }
-    .sel input{ width: 16px; height: 16px; }
+    .sel input{ width: 18px; height: 18px; }
 
     /* ===== Bottom bar (desktop) ===== */
     .bottomBar{
@@ -434,6 +538,9 @@
       transition: opacity .18s ease, transform .18s ease;
       backdrop-filter: blur(12px);
     }
+    :root[data-theme="light"] .snackbar{
+      color: rgba(255,255,255,.96); /* snack stays dark-ish for readability */
+    }
     .snackbar.show{
       opacity:1;
       pointer-events:auto;
@@ -475,25 +582,31 @@
       backdrop-filter: blur(12px);
     }
     .modal.show{ display:flex; }
+
     .sheet{
-      width: min(760px, 100%);
+      width: min(820px, 100%);
       border-radius: 22px;
       border:1px solid var(--line);
       background: var(--panel);
       box-shadow: var(--shadow);
       overflow:hidden;
-      transform: translateY(6px);
+      transform: translateY(8px);
       animation: pop .16s ease forwards;
     }
     @keyframes pop{ to{ transform: translateY(0); } }
+
     .sheetHead{
-      padding: 14px;
+      padding: 12px 14px;
       display:flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
       border-bottom: 1px solid var(--line);
       background: var(--panel2);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      backdrop-filter: blur(14px);
     }
     .sheetHead .ttl{
       display:flex; gap:10px; align-items:center;
@@ -501,7 +614,99 @@
       font-size: 14px;
       letter-spacing:.2px;
     }
-    .sheetBody{ padding: 14px; }
+    .sheetBody{
+      padding: 14px;
+      max-height: min(72vh, 680px);
+      overflow:auto;
+    }
+
+    .grabber{
+      display:none;
+      width: 44px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.20);
+      margin: 10px auto 0;
+    }
+    :root[data-theme="light"] .grabber{ background: rgba(17,24,39,.16); }
+
+    .section{
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      margin-bottom: 12px;
+    }
+    .section summary{
+      list-style:none;
+      cursor:pointer;
+      padding: 12px 12px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      user-select:none;
+      min-height: var(--tap);
+    }
+    .section summary::-webkit-details-marker{ display:none; }
+    .section .sumLeft{ display:flex; gap:10px; align-items:center; font-weight: 900; }
+    .section .chev{ opacity:.85; transition: transform .16s ease; }
+    details[open] .chev{ transform: rotate(180deg); }
+    .section .content{
+      padding: 0 12px 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .seg{
+      display:flex; gap:8px; flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .chip{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--txt);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-weight: 900;
+      font-size: 12px;
+      min-height: 38px;
+      transition: transform .08s ease, background .2s ease;
+    }
+    .chip:hover{ background: rgba(255,255,255,.08); }
+    .chip:active{ transform: scale(.98); }
+
+    .chip.active{
+      border-color: var(--accentLine);
+      background: linear-gradient(135deg, var(--accentA), var(--accentB));
+    }
+
+    .stickyFooter{
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,.16));
+      padding-top: 10px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 768px){
+      .modal{ align-items:flex-end; padding: 10px; }
+      .sheet{
+        width: 100%;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+      }
+      .grabber{ display:block; }
+      .sheetBody{
+        max-height: calc(100dvh - 140px);
+        padding-bottom: calc(14px + env(safe-area-inset-bottom));
+      }
+    }
 
     /* ===== Mobile Dock ===== */
     .mobileDock{
@@ -530,6 +735,7 @@
       cursor:pointer;
       min-width: 84px;
       transition: transform .08s ease, background .2s ease;
+      min-height: 54px;
     }
     .dockBtn:hover{ background: rgba(255,255,255,.06); }
     .dockBtn:active{ transform: scale(.98); }
@@ -540,35 +746,50 @@
       .mobileDock{ display:flex; }
       .bottomBar{ display:none; }
       .app{ padding-bottom: 140px; }
-      .modal{ align-items:flex-end; }
-      .sheet{
-        width: 100%;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-      }
     }
 
-    /* ===== KEY FIX: Result FULL WIDTH nhưng NỘI DUNG vẫn “đẹp” ===== */
-    #resultWrap{
-      width: 100%;
-      margin-top: 14px;
-      padding: 0 18px;
-    }
+    /* ===== Result FULL WIDTH but content nice ===== */
+    #resultWrap{ width:100%; margin-top:14px; padding:0 18px; }
     @media (min-width: 1024px){
-      #resultWrap{
-        width: 100vw;
-        position: relative;
-        left: 50%;
-        margin-left: -50vw;
-        padding: 0 26px;
-      }
-      #resultInner{
-        max-width: 1400px;
-        margin: 0 auto;
-      }
+      #resultWrap{ width:100vw; position:relative; left:50%; margin-left:-50vw; padding:0 26px; }
+      #resultInner{ max-width: 1400px; margin:0 auto; }
     }
     .resultCard{ border-radius: 28px; }
     .resultCard .cardBody{ padding: 16px; }
+
+    /* grid cards full height */
+    .grid > .card{
+      height: 100%;
+      display:flex;
+      flex-direction: column;
+    }
+    .grid > .card .cardBody{ flex:1; }
+    #uploadCard .drop{ flex:0 0 auto; }
+
+    /* Tips list */
+    .tipsList{ display:grid; gap:10px; margin-top:2px; }
+    .tipItem{
+      display:flex; gap:10px; align-items:flex-start;
+      padding: 10px 12px;
+      border:1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.05);
+    }
+    .tipIcon{
+      width: 36px; height:36px;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      flex:0 0 auto;
+    }
+    .tipText{ flex:1; }
+    .tipTitle{ font-weight: 900; font-size: 13px; line-height:1.2; margin:0; }
+    .tipDesc{ margin:4px 0 0; font-size:12px; color:var(--muted); line-height:1.35; }
+    @media (max-width: 560px){
+      .tipItem{ padding:10px; }
+      .tipIcon{ width:34px; height:34px; border-radius:13px; }
+    }
   </style>
 </head>
 
@@ -579,8 +800,8 @@
         <div class="brand">
           <div class="mark"><span class="ms">photo_auto_merge</span></div>
           <div>
-            <h1>Batch Ảnh 1:1 • Blur nền • Watermark • Logo + Glass Plate</h1>
-            <div class="sub">
+            <h1 data-i18n="title">Batch Ảnh 1:1 • Blur nền • Watermark • Logo + Glass Plate</h1>
+            <div class="sub" data-i18n="subtitle">
               <span class="ms xs">upload</span><span>Preview ảnh gốc</span>
               <span class="ms xs">arrow_forward</span><span>Xử lý</span>
               <span class="ms xs">arrow_forward</span><span>Preview kết quả</span>
@@ -589,15 +810,27 @@
           </div>
         </div>
 
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+        <div class="topActions">
+          <!-- Theme toggle -->
+          <button class="btn mini" id="btnTheme" type="button" title="Theme">
+            <span class="ms" id="themeIcon">brightness_auto</span>
+            <span data-i18n="theme">Giao diện</span>
+          </button>
+
+          <!-- Language toggle -->
+          <button class="btn mini" id="btnLang" type="button" title="Language">
+            <span class="ms">translate</span>
+            <span id="langLabel">VI</span>
+          </button>
+
           <button class="btn mini" id="btnOpenSettings">
-            <span class="ms">settings</span> Cài đặt
+            <span class="ms">settings</span> <span data-i18n="settings">Cài đặt</span>
           </button>
           <button class="btn danger" id="btnClear" disabled>
-            <span class="ms">delete_sweep</span> Xoá
+            <span class="ms">delete_sweep</span> <span data-i18n="clear">Xoá</span>
           </button>
           <button class="btn primary" id="btnRun" disabled>
-            <span class="ms">auto_fix_high</span> Xử lý
+            <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
           </button>
         </div>
       </div>
@@ -608,8 +841,8 @@
       <div class="card">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">cloud_upload</span> Ảnh gốc (Preview bên trên)</h2>
-            <div class="desc">
+            <h2><span class="ms">cloud_upload</span> <span data-i18n="input_title">Ảnh gốc (Preview bên trên)</span></h2>
+            <div class="desc" data-i18n="input_desc">
               Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
               <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và <code>./assets/watermark/watermark.png</code>
               (có thể chọn lại trong Cài đặt để override).
@@ -619,23 +852,23 @@
 
         <div class="cardBody" id="uploadCard">
           <div class="drop" id="dropzone">
-            <p class="t"><span class="ms">upload</span> Kéo thả ảnh vào đây</p>
-            <p class="d"><span class="ms xs">info</span><span>Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).</span></p>
+            <p class="t"><span class="ms">upload</span> <span data-i18n="drop_title">Kéo thả ảnh vào đây</span></p>
+            <p class="d"><span class="ms xs">info</span><span data-i18n="drop_desc">Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).</span></p>
 
             <div class="row" style="margin-top:10px">
               <div>
-                <label>Chọn nhiều ảnh (cộng dồn)</label>
+                <label data-i18n="pick_files">Chọn nhiều ảnh (cộng dồn)</label>
                 <input id="inPhotos" class="field" type="file" accept="image/*" multiple />
               </div>
               <div>
-                <label>Chọn thư mục ảnh (Chrome/Edge)</label>
+                <label data-i18n="pick_folder">Chọn thư mục ảnh (Chrome/Edge)</label>
                 <input id="inFolder" class="field" type="file" accept="image/*" multiple webkitdirectory directory />
               </div>
             </div>
 
             <div class="hint">
               <span class="ms sm">tips_and_updates</span>
-              <div>Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview thumbnails).</div>
+              <div data-i18n="hint_remove">Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview thumbnails).</div>
             </div>
           </div>
 
@@ -643,8 +876,8 @@
 
           <div class="preTop">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <span class="badge"><span class="ms sm">photo_library</span> Ảnh: <b id="kpiCountIn">0</b></span>
-              <span class="badge"><span class="ms sm">folder_open</span> Chế độ: <b id="kpiModeIn">—</b></span>
+              <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b id="kpiCountIn">0</b></span>
+              <span class="badge"><span class="ms sm">folder_open</span> <span data-i18n="mode">Chế độ</span>: <b id="kpiModeIn">—</b></span>
             </div>
           </div>
 
@@ -664,63 +897,82 @@
       <div class="card">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">info</span> Gợi ý</h2>
-            <div class="desc">Mở <b>Cài đặt</b> để chọn Watermark/Logo + format PNG/JPG + thông số.</div>
+            <h2><span class="ms">info</span> <span data-i18n="tips_title">Gợi ý nhanh</span></h2>
+            <div class="desc" data-i18n="tips_desc">Mở <b>Cài đặt</b> để đổi Logo/Watermark, format và thông số.</div>
           </div>
         </div>
+
         <div class="cardBody">
-          <div class="hint">
-            <span class="ms sm">verified_user</span>
-            <div><b>PNG</b> phù hợp khi muốn giữ nét (file lớn hơn). <b>JPG</b nhẹ hơn, tuỳ chọn quality.</div>
-          </div>
-          <div class="hint">
-            <span class="ms sm">tips_and_updates</span>
-            <div>Watermark 1080×1080 sẽ khớp vị trí đẹp nhất.</div>
-          </div>
-          <div class="hint">
-            <span class="ms sm">folder_open</span>
-            <div>Đặt file mặc định: <b>assets/logo/logo.png</b> và <b>assets/watermark/watermark.png</b>.</div>
+          <div class="tipsList">
+            <div class="tipItem">
+              <div class="tipIcon"><span class="ms">image</span></div>
+              <div class="tipText">
+                <p class="tipTitle" data-i18n="tip1_title">PNG nét • JPG nhẹ</p>
+                <p class="tipDesc" data-i18n="tip1_desc">PNG giữ chi tiết, JPG giảm dung lượng (Quality 1–12).</p>
+              </div>
+            </div>
+
+            <div class="tipItem">
+              <div class="tipIcon"><span class="ms">water_drop</span></div>
+              <div class="tipText">
+                <p class="tipTitle" data-i18n="tip2_title">Watermark tự co giãn</p>
+                <p class="tipDesc" data-i18n="tip2_desc">Luôn scale theo <b>OUT_SIZE</b>, không cần đúng 1080×1080.</p>
+              </div>
+            </div>
+
+            <div class="tipItem">
+              <div class="tipIcon"><span class="ms">folder_open</span></div>
+              <div class="tipText">
+                <p class="tipTitle" data-i18n="tip3_title">File mặc định</p>
+                <p class="tipDesc"><b>assets/logo/logo.png</b> • <b>assets/watermark/watermark.png</b></p>
+              </div>
+            </div>
+
+            <div class="tipItem">
+              <div class="tipIcon"><span class="ms">auto_fix_high</span></div>
+              <div class="tipText">
+                <p class="tipTitle" data-i18n="tip4_title">Quy trình chuẩn</p>
+                <p class="tipDesc" data-i18n="tip4_desc">Upload → (tuỳ chọn) Cài đặt → Xử lý → Tải lẻ / Tải chọn / ZIP.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- RESULT FULL WIDTH + INNER CONTAINER -->
-  <div id="resultWrap">
-    <div id="resultInner">
+    <div id="resultInner" style="margin-top: 8px;">
       <div class="card resultCard">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">gallery_thumbnail</span> Kết quả (Preview bên dưới)</h2>
-            <div class="desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.</div>
+            <h2><span class="ms">gallery_thumbnail</span> <span data-i18n="out_title">Kết quả (Preview bên dưới)</span></h2>
+            <div class="desc" data-i18n="out_desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.</div>
           </div>
         </div>
         <div class="cardBody">
           <div class="preTop">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <span class="badge"><span class="ms sm">photo_library</span> Ảnh: <b id="kpiCountOut">0</b></span>
-              <span class="badge"><span class="ms sm">verified</span> Sẵn sàng: <b id="kpiReady">No</b></span>
+              <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b id="kpiCountOut">0</b></span>
+              <span class="badge"><span class="ms sm">verified</span> <span data-i18n="ready">Sẵn sàng</span>: <b id="kpiReady">No</b></span>
             </div>
 
-            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <div class="actionRow">
               <button class="btn mini" id="btnSelectAll" disabled>
-                <span class="ms">select_all</span> Chọn tất
+                <span class="ms">select_all</span> <span data-i18n="select_all">Chọn tất</span>
               </button>
               <button class="btn mini" id="btnUnselectAll" disabled>
-                <span class="ms">deselect</span> Bỏ chọn
+                <span class="ms">deselect</span> <span data-i18n="unselect_all">Bỏ chọn</span>
               </button>
               <button class="btn mini" id="btnDownloadSelected" disabled>
-                <span class="ms">download</span> Tải đã chọn
+                <span class="ms">download</span> <span data-i18n="download_selected">Tải đã chọn</span>
               </button>
               <button class="btn mini" id="btnDownloadAll" disabled>
-                <span class="ms">archive</span> Tải tất cả (ZIP)
+                <span class="ms">archive</span> <span data-i18n="download_zip">Tải tất cả (ZIP)</span>
               </button>
             </div>
           </div>
 
           <div class="progress"><div class="bar" id="bar"></div></div>
-          <div class="mono" id="status"><span class="ms xs">info</span><span>Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.</span></div>
+          <div class="mono" id="status"><span class="ms xs">info</span><span data-i18n="no_result">Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.</span></div>
 
           <div style="height:10px"></div>
           <div class="thumbs" id="thumbsOut"></div>
@@ -733,17 +985,19 @@
   <div class="bottomBar">
     <div class="small">
       <span class="ms sm">info</span>
-      <span id="bottomHint">Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.</span>
+      <span id="bottomHint" data-i18n="bottom_hint">
+        Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.
+      </span>
     </div>
     <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
       <button class="btn mini" id="btnOpenSettings2">
-        <span class="ms">settings</span> Cài đặt
+        <span class="ms">settings</span> <span data-i18n="settings">Cài đặt</span>
       </button>
       <button class="btn danger" id="btnClear2" disabled>
-        <span class="ms">delete</span> Xoá
+        <span class="ms">delete</span> <span data-i18n="clear">Xoá</span>
       </button>
       <button class="btn primary" id="btnRun2" disabled>
-        <span class="ms">auto_fix_high</span> Xử lý
+        <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
       </button>
     </div>
   </div>
@@ -752,126 +1006,211 @@
   <div class="mobileDock">
     <button class="dockBtn" id="dockUpload">
       <span class="ms">upload</span>
-      <span class="dockLab">Upload</span>
+      <span class="dockLab" data-i18n="dock_upload">Upload</span>
     </button>
     <button class="dockBtn" id="dockSettings">
       <span class="ms">settings</span>
-      <span class="dockLab">Cài đặt</span>
+      <span class="dockLab" data-i18n="dock_settings">Cài đặt</span>
     </button>
     <button class="dockBtn" id="dockRun">
       <span class="ms">play_arrow</span>
-      <span class="dockLab">Xử lý</span>
+      <span class="dockLab" data-i18n="dock_process">Xử lý</span>
     </button>
   </div>
 
   <!-- Settings Popup (Modal) -->
   <div class="modal" id="settingsModal" aria-hidden="true">
     <div class="sheet" role="dialog" aria-modal="true" aria-label="Cài đặt">
+      <div class="grabber"></div>
       <div class="sheetHead">
-        <div class="ttl"><span class="ms">tune</span> Cài đặt</div>
-        <button class="btn mini" id="btnCloseSettings"><span class="ms">close</span></button>
+        <div class="ttl"><span class="ms">tune</span> <span data-i18n="settings">Cài đặt</span></div>
+        <button class="btn mini" id="btnCloseSettings" type="button"><span class="ms">close</span></button>
       </div>
+
       <div class="sheetBody">
-        <div class="row">
-          <div>
-            <label>Watermark PNG overlay (mặc định: ./assets/watermark.png)</label>
-            <input id="inWM" class="field" type="file" accept="image/png" />
+
+        <!-- NEW: UI + Language -->
+        <details class="section" open>
+          <summary>
+            <div class="sumLeft"><span class="ms">palette</span> <span data-i18n="ui_lang">Giao diện & Ngôn ngữ</span></div>
+            <span class="ms chev">expand_more</span>
+          </summary>
+          <div class="content">
+            <div style="margin-top:10px">
+              <label data-i18n="theme_mode">Chế độ giao diện</label>
+              <div class="seg">
+                <button class="chip" type="button" data-theme-pick="auto"><span class="ms sm">brightness_auto</span> Auto</button>
+                <button class="chip" type="button" data-theme-pick="dark"><span class="ms sm">dark_mode</span> Dark</button>
+                <button class="chip" type="button" data-theme-pick="light"><span class="ms sm">light_mode</span> Light</button>
+              </div>
+              <div class="hint">
+                <span class="ms sm">bolt</span>
+                <div data-i18n="theme_hint">Lưu vào máy. Load lại không bị nháy giao diện.</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <label data-i18n="language">Ngôn ngữ</label>
+              <div class="seg">
+                <button class="chip" type="button" data-lang-pick="vi"><span class="ms sm">translate</span> VI</button>
+                <button class="chip" type="button" data-lang-pick="en"><span class="ms sm">translate</span> EN</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label>Logo PNG (mặc định: ./assets/logo.png)</label>
-            <input id="inLogo" class="field" type="file" accept="image/png" />
+        </details>
+
+        <!-- Presets -->
+        <div class="section" style="margin-bottom:12px;">
+          <div style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
+            <span class="ms">bolt</span> <span data-i18n="preset">Preset nhanh</span>
+          </div>
+          <div style="padding: 12px;">
+            <div class="seg">
+              <button class="chip" type="button" id="preset1080"><span class="ms sm">auto_awesome</span> 1080 • Blur 45</button>
+              <button class="chip" type="button" id="preset1350"><span class="ms sm">crop_square</span> 1350 • Blur 55</button>
+              <button class="chip" type="button" id="presetSoft"><span class="ms sm">blur_on</span> <span data-i18n="blur_soft">Blur mềm</span></button>
+              <button class="chip" type="button" id="presetStrong"><span class="ms sm">blur_circular</span> <span data-i18n="blur_strong">Blur mạnh</span></button>
+            </div>
           </div>
         </div>
 
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>Định dạng xuất</label>
-            <select id="OUT_FORMAT" class="field">
-              <option value="jpg" selected>JPG</option>
-              <option value="png">PNG</option>
-            </select>
+        <details class="section" open>
+          <summary>
+            <div class="sumLeft"><span class="ms">image</span> <span data-i18n="wm_logo">Watermark & Logo</span></div>
+            <span class="ms chev">expand_more</span>
+          </summary>
+          <div class="content">
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label data-i18n="wm_file">Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)</label>
+                <input id="inWM" class="field" type="file" accept="image/png" />
+              </div>
+              <div>
+                <label data-i18n="logo_file">Logo PNG (mặc định: ./assets/logo/logo.png)</label>
+                <input id="inLogo" class="field" type="file" accept="image/png" />
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>WM_OPACITY (%)</label>
+                <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
+              </div>
+              <div>
+                <label>LOGO_TARGET_W</label>
+                <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>LOGO_MARGIN</label>
+                <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
+              </div>
+              <div>
+                <label>OUT_SIZE</label>
+                <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
+              </div>
+            </div>
+            <div class="hint">
+              <span class="ms sm">tips_and_updates</span>
+              <div data-i18n="wm_scale_hint">Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).</div>
+            </div>
           </div>
-          <div>
-            <label>JPG_QUALITY (1–12) — chỉ dùng khi JPG</label>
-            <input id="JPG_QUALITY" class="field" type="number" value="10" min="1" max="12" step="1">
-          </div>
-        </div>
+        </details>
 
-        <div class="hint">
-          <span class="ms sm">verified_user</span>
-          <div>Watermark 1080×1080 sẽ khớp vị trí đẹp nhất.</div>
-        </div>
+        <details class="section">
+          <summary>
+            <div class="sumLeft"><span class="ms">photo_size_select_large</span> Output</div>
+            <span class="ms chev">expand_more</span>
+          </summary>
+          <div class="content">
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label data-i18n="out_format">Định dạng xuất</label>
+                <select id="OUT_FORMAT" class="field">
+                  <option value="jpg" selected>JPG</option>
+                  <option value="png">PNG</option>
+                </select>
+              </div>
+              <div>
+                <label data-i18n="jpg_quality">JPG_QUALITY (1–12) — chỉ dùng khi JPG</label>
+                <input id="JPG_QUALITY" class="field" type="number" value="10" min="1" max="12" step="1">
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label data-i18n="zip_name">Tên ZIP (tải tất cả)</label>
+                <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
+              </div>
+              <div class="hint" style="margin: 0;">
+                <span class="ms sm">verified_user</span>
+                <div data-i18n="format_hint">PNG nét hơn, JPG nhẹ hơn.</div>
+              </div>
+            </div>
+          </div>
+        </details>
 
-        <hr style="margin:14px 0; border-color:var(--line)">
+        <details class="section" open>
+          <summary>
+            <div class="sumLeft"><span class="ms">blur_on</span> <span data-i18n="blur_bg">Blur nền</span></div>
+            <span class="ms chev">expand_more</span>
+          </summary>
+          <div class="content">
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>BG_BLUR</label>
+                <input id="BG_BLUR" class="field" type="number" value="45" min="0" step="1">
+              </div>
+              <div>
+                <label>BG_SCALE (%)</label>
+                <input id="BG_SCALE" class="field" type="number" value="115" min="100" step="1">
+              </div>
+            </div>
+            <div class="hint">
+              <span class="ms sm">auto_fix_high</span>
+              <div data-i18n="blur_fix">Đã fix “viền mở rộng chưa blur”: nền blur được vẽ lớn hơn theo BG_BLUR nên không hở viền.</div>
+            </div>
+          </div>
+        </details>
 
-        <div class="row">
-          <div>
-            <label>OUT_SIZE</label>
-            <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
+        <details class="section">
+          <summary>
+            <div class="sumLeft"><span class="ms">layers</span> <span data-i18n="glass_plate">Glass Plate sau logo</span></div>
+            <span class="ms chev">expand_more</span>
+          </summary>
+          <div class="content">
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>PLATE_PADDING</label>
+                <input id="LOGO_PLATE_PADDING" class="field" type="number" value="14" min="0" step="1">
+              </div>
+              <div>
+                <label>PLATE_BLUR</label>
+                <input id="LOGO_PLATE_BLUR" class="field" type="number" value="18" min="0" step="1">
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>PLATE_OPACITY (%)</label>
+                <input id="LOGO_PLATE_OPACITY" class="field" type="number" value="40" min="0" max="100" step="1">
+              </div>
+              <div>
+                <label>PLATE_COLOR</label>
+                <select id="LOGO_PLATE_COLOR" class="field">
+                  <option value="black" selected>black</option>
+                  <option value="white">white</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div>
-            <label>BG_BLUR</label>
-            <input id="BG_BLUR" class="field" type="number" value="45" min="0" step="1">
-          </div>
-        </div>
+        </details>
 
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>BG_SCALE (%)</label>
-            <input id="BG_SCALE" class="field" type="number" value="115" min="100" step="1">
-          </div>
-          <div>
-            <label>WM_OPACITY (%)</label>
-            <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>LOGO_TARGET_W</label>
-            <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
-          </div>
-          <div>
-            <label>LOGO_MARGIN</label>
-            <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>PLATE_PADDING</label>
-            <input id="LOGO_PLATE_PADDING" class="field" type="number" value="14" min="0" step="1">
-          </div>
-          <div>
-            <label>PLATE_BLUR</label>
-            <input id="LOGO_PLATE_BLUR" class="field" type="number" value="18" min="0" step="1">
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>PLATE_OPACITY (%)</label>
-            <input id="LOGO_PLATE_OPACITY" class="field" type="number" value="40" min="0" max="100" step="1">
-          </div>
-          <div>
-            <label>PLATE_COLOR</label>
-            <select id="LOGO_PLATE_COLOR" class="field">
-              <option value="black" selected>black</option>
-              <option value="white">white</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>Tên ZIP (tải tất cả)</label>
-            <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button class="btn primary" id="btnSaveClose" type="button">
-              <span class="ms">done</span> Lưu & Đóng
-            </button>
+        <div class="stickyFooter">
+          <button class="btn primary" id="btnSaveClose" type="button" style="width:100%; justify-content:center;">
+            <span class="ms">done</span> <span data-i18n="save_close">Lưu & Đóng</span>
+          </button>
+          <div class="hint" style="margin-top:10px">
+            <span class="ms sm">keyboard</span>
+            <div data-i18n="esc_hint">Nhấn <b>ESC</b> để đóng. Chạm nền tối để đóng.</div>
           </div>
         </div>
       </div>
@@ -894,6 +1233,266 @@
     const quality12ToCanvasQ = (q12)=> clamp(q12/12, 0.08, 1);
     const isImage = (f)=> /^image\//.test(f.type);
 
+    /* ================= I18N ================= */
+    const I18N = {
+      vi: {
+        title: "Batch Ảnh 1:1 • Blur nền • Watermark • Logo + Glass Plate",
+        subtitle: `
+          <span class="ms xs">upload</span><span>Preview ảnh gốc</span>
+          <span class="ms xs">arrow_forward</span><span>Xử lý</span>
+          <span class="ms xs">arrow_forward</span><span>Preview kết quả</span>
+          <span class="ms xs">download</span><span>Tải 1 hoặc tải nhiều bằng tick</span>
+        `,
+        theme: "Giao diện",
+        settings: "Cài đặt",
+        clear: "Xoá",
+        process: "Xử lý",
+        input_title: "Ảnh gốc (Preview bên trên)",
+        input_desc: `Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
+          <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và <code>./assets/watermark/watermark.png</code> (có thể chọn lại trong Cài đặt để override).`,
+        drop_title: "Kéo thả ảnh vào đây",
+        drop_desc: "Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).",
+        pick_files: "Chọn nhiều ảnh (cộng dồn)",
+        pick_folder: "Chọn thư mục ảnh (Chrome/Edge)",
+        hint_remove: `Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview thumbnails).`,
+        count: "Ảnh",
+        mode: "Chế độ",
+        tips_title: "Gợi ý nhanh",
+        tips_desc: "Mở <b>Cài đặt</b> để đổi Logo/Watermark, format và thông số.",
+        tip1_title: "PNG nét • JPG nhẹ",
+        tip1_desc: "PNG giữ chi tiết, JPG giảm dung lượng (Quality 1–12).",
+        tip2_title: "Watermark tự co giãn",
+        tip2_desc: "Luôn scale theo <b>OUT_SIZE</b>, không cần đúng 1080×1080.",
+        tip3_title: "File mặc định",
+        tip4_title: "Quy trình chuẩn",
+        tip4_desc: "Upload → (tuỳ chọn) Cài đặt → Xử lý → Tải lẻ / Tải chọn / ZIP.",
+        out_title: "Kết quả (Preview bên dưới)",
+        out_desc: "Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.",
+        ready: "Sẵn sàng",
+        select_all: "Chọn tất",
+        unselect_all: "Bỏ chọn",
+        download_selected: "Tải đã chọn",
+        download_zip: "Tải tất cả (ZIP)",
+        no_result: "Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.",
+        bottom_hint: "Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.",
+        dock_upload: "Upload",
+        dock_settings: "Cài đặt",
+        dock_process: "Xử lý",
+        ui_lang: "Giao diện & Ngôn ngữ",
+        theme_mode: "Chế độ giao diện",
+        theme_hint: "Lưu vào máy. Load lại không bị nháy giao diện.",
+        language: "Ngôn ngữ",
+        preset: "Preset nhanh",
+        blur_soft: "Blur mềm",
+        blur_strong: "Blur mạnh",
+        wm_logo: "Watermark & Logo",
+        wm_file: "Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)",
+        logo_file: "Logo PNG (mặc định: ./assets/logo/logo.png)",
+        wm_scale_hint: "Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).",
+        out_format: "Định dạng xuất",
+        jpg_quality: "JPG_QUALITY (1–12) — chỉ dùng khi JPG",
+        zip_name: "Tên ZIP (tải tất cả)",
+        format_hint: "PNG nét hơn, JPG nhẹ hơn.",
+        blur_bg: "Blur nền",
+        blur_fix: "Đã fix “viền mở rộng chưa blur”: nền blur được vẽ lớn hơn theo BG_BLUR nên không hở viền.",
+        glass_plate: "Glass Plate sau logo",
+        save_close: "Lưu & Đóng",
+        esc_hint: "Nhấn <b>ESC</b> để đóng. Chạm nền tối để đóng.",
+        status_need_images: "Thiếu dữ liệu: cần ảnh.",
+        status_load_assets: "Đang load watermark + logo…",
+        status_start: "Bắt đầu xử lý…",
+        status_zip: "Đang đóng gói ZIP…",
+        status_done: (n)=> `Xử lý xong ${n} ảnh.`,
+        status_err: (m)=> `Lỗi: ${m}`,
+        snack_saved: "Đã lưu cài đặt.",
+        snack_cleared: "Đã xoá.",
+        snack_removed: "Đã xoá ảnh khỏi danh sách.",
+        snack_invalid: "Không có ảnh hợp lệ.",
+        snack_drag_err: "Không đọc được dữ liệu kéo thả.",
+        snack_done: "Hoàn tất xử lý.",
+        snack_downloaded: (name)=> `Đã tải ${name}`,
+        snack_selected_none: "Chưa chọn ảnh nào.",
+        snack_downloaded_n: (n)=> `Đã tải ${n} ảnh đã chọn.`,
+        folder_picked: (name, n)=> `Đã chọn thư mục: ${name} (${n} ảnh)`,
+        added_n: (added, total)=> `Đã thêm ${added} ảnh. Tổng: ${total}`,
+        preset_1080: "Đã áp dụng preset 1080.",
+        preset_1350: "Đã áp dụng preset 1350.",
+        blur_softer: "Blur mềm hơn.",
+        blur_stronger: "Blur mạnh hơn.",
+        download_one: "Tải ảnh",
+        result_tag: "Ảnh kết quả",
+        choose: "Chọn"
+      },
+      en: {
+        title: "Batch 1:1 • Blurred BG • Watermark • Logo + Glass Plate",
+        subtitle: `
+          <span class="ms xs">upload</span><span>Preview input</span>
+          <span class="ms xs">arrow_forward</span><span>Process</span>
+          <span class="ms xs">arrow_forward</span><span>Preview output</span>
+          <span class="ms xs">download</span><span>Download single or multi</span>
+        `,
+        theme: "Theme",
+        settings: "Settings",
+        clear: "Clear",
+        process: "Process",
+        input_title: "Input photos (Preview above)",
+        input_desc: `Pick multiple times to append. If you pick a folder → show folder icon + name + count only.
+          <br><b>Default:</b> logo + watermark from <code>./assets/logo/logo.png</code> and <code>./assets/watermark/watermark.png</code> (override in Settings).`,
+        drop_title: "Drag & drop images here",
+        drop_desc: "Chrome/Edge supports folder picker (webkitdirectory).",
+        pick_files: "Pick images (append)",
+        pick_folder: "Pick folder (Chrome/Edge)",
+        hint_remove: `Remove <span class="ms xs">close</span> button appears only in files mode (thumbnails).`,
+        count: "Images",
+        mode: "Mode",
+        tips_title: "Quick tips",
+        tips_desc: "Open <b>Settings</b> to change Logo/Watermark, format and params.",
+        tip1_title: "PNG sharp • JPG light",
+        tip1_desc: "PNG keeps details, JPG reduces size (Quality 1–12).",
+        tip2_title: "Auto-scale watermark",
+        tip2_desc: "Always scales with <b>OUT_SIZE</b>, no need exactly 1080×1080.",
+        tip3_title: "Default files",
+        tip4_title: "Workflow",
+        tip4_desc: "Upload → (optional) Settings → Process → Download single / selected / ZIP.",
+        out_title: "Result (Preview below)",
+        out_desc: "Results appear after processing. Download single / selected / ZIP.",
+        ready: "Ready",
+        select_all: "Select all",
+        unselect_all: "Unselect",
+        download_selected: "Download selected",
+        download_zip: "Download all (ZIP)",
+        no_result: "No results yet. Click “Process” to generate.",
+        bottom_hint: "Pick images → (optional) Settings → Process. If not set, defaults from assets will be used.",
+        dock_upload: "Upload",
+        dock_settings: "Settings",
+        dock_process: "Process",
+        ui_lang: "UI & Language",
+        theme_mode: "Theme mode",
+        theme_hint: "Saved locally. Reload without flicker.",
+        language: "Language",
+        preset: "Quick presets",
+        blur_soft: "Softer blur",
+        blur_strong: "Stronger blur",
+        wm_logo: "Watermark & Logo",
+        wm_file: "Watermark PNG overlay (default: ./assets/watermark/watermark.png)",
+        logo_file: "Logo PNG (default: ./assets/logo/logo.png)",
+        wm_scale_hint: "Watermark auto-scales with OUT_SIZE (not bound to 1080×1080).",
+        out_format: "Output format",
+        jpg_quality: "JPG_QUALITY (1–12) — for JPG only",
+        zip_name: "ZIP name (download all)",
+        format_hint: "PNG is sharper, JPG is smaller.",
+        blur_bg: "Background blur",
+        blur_fix: "Fixed blur edge: background is drawn larger by BG_BLUR so no border gaps.",
+        glass_plate: "Glass plate behind logo",
+        save_close: "Save & Close",
+        esc_hint: "Press <b>ESC</b> to close. Tap backdrop to close.",
+        status_need_images: "Missing input: please add images.",
+        status_load_assets: "Loading watermark + logo…",
+        status_start: "Processing…",
+        status_zip: "Packing ZIP…",
+        status_done: (n)=> `Done: ${n} images.`,
+        status_err: (m)=> `Error: ${m}`,
+        snack_saved: "Saved.",
+        snack_cleared: "Cleared.",
+        snack_removed: "Removed from list.",
+        snack_invalid: "No valid images.",
+        snack_drag_err: "Cannot read dropped files.",
+        snack_done: "Processing completed.",
+        snack_downloaded: (name)=> `Downloaded ${name}`,
+        snack_selected_none: "No images selected.",
+        snack_downloaded_n: (n)=> `Downloaded ${n} selected images.`,
+        folder_picked: (name, n)=> `Folder selected: ${name} (${n})`,
+        added_n: (added, total)=> `Added ${added}. Total: ${total}`,
+        preset_1080: "Preset 1080 applied.",
+        preset_1350: "Preset 1350 applied.",
+        blur_softer: "Softer blur applied.",
+        blur_stronger: "Stronger blur applied.",
+        download_one: "Download",
+        result_tag: "Output",
+        choose: "Select"
+      }
+    };
+
+    function getLang(){
+      return document.documentElement.getAttribute("lang") || "vi";
+    }
+    function t(key, arg){
+      const lang = getLang();
+      const dict = I18N[lang] || I18N.vi;
+      const v = dict[key];
+      return (typeof v === "function") ? v(arg) : (v ?? key);
+    }
+    function applyLang(){
+      const lang = getLang();
+      const dict = I18N[lang] || I18N.vi;
+
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const k = el.getAttribute("data-i18n");
+        const v = dict[k];
+        if(typeof v === "string"){
+          // allow html for subtitle and some hints
+          if(k === "subtitle" || k === "input_desc" || k === "hint_remove"){
+            el.innerHTML = v;
+          }else{
+            el.innerHTML = v;
+          }
+        }
+      });
+
+      $("langLabel").textContent = (lang || "vi").toUpperCase();
+      syncDockLabels();
+    }
+
+    /* ================= THEME ================= */
+    function getTheme(){
+      return document.documentElement.getAttribute("data-theme") || "auto";
+    }
+    function setTheme(theme){
+      document.documentElement.setAttribute("data-theme", theme);
+      try{ localStorage.setItem("theme", theme); }catch(e){}
+      updateThemeUI();
+    }
+    function cycleTheme(){
+      const cur = getTheme();
+      const next = cur === "auto" ? "dark" : cur === "dark" ? "light" : "auto";
+      setTheme(next);
+      snack(`${t("theme")}: ${next.toUpperCase()}`, "ok");
+    }
+    function updateThemeUI(){
+      const theme = getTheme();
+      const icon = theme === "dark" ? "dark_mode" : theme === "light" ? "light_mode" : "brightness_auto";
+      $("themeIcon").textContent = icon;
+
+      // highlight chips in modal
+      document.querySelectorAll("[data-theme-pick]").forEach(b=>{
+        b.classList.toggle("active", b.getAttribute("data-theme-pick") === theme);
+      });
+    }
+
+    function setLang(lang){
+      document.documentElement.setAttribute("lang", lang);
+      try{ localStorage.setItem("lang", lang); }catch(e){}
+      applyLang();
+      updateLangUI();
+    }
+    function toggleLang(){
+      const cur = getLang();
+      setLang(cur === "vi" ? "en" : "vi");
+      snack(`Language: ${getLang().toUpperCase()}`, "ok");
+    }
+    function updateLangUI(){
+      const lang = getLang();
+      $("langLabel").textContent = lang.toUpperCase();
+      document.querySelectorAll("[data-lang-pick]").forEach(b=>{
+        b.classList.toggle("active", b.getAttribute("data-lang-pick") === lang);
+      });
+    }
+
+    function syncDockLabels(){
+      // labels are driven by data-i18n already, applyLang handles it
+    }
+
+    /* ============== UI helpers ============== */
     function setStatus(text, icon="info"){
       $("status").innerHTML = `<span class="ms xs">${icon}</span><span>${text}</span>`;
     }
@@ -937,6 +1536,17 @@
       });
     }
 
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.max(0, Math.min(r, Math.min(w,h)/2));
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y,   x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x,   y+h, rr);
+      ctx.arcTo(x,   y+h, x,   y,   rr);
+      ctx.arcTo(x,   y,   x+w, y,   rr);
+      ctx.closePath();
+    }
+
     function renderOne({
       srcBitmap, wmBitmap, logoBitmap,
       OUT_SIZE, BG_BLUR, BG_SCALE,
@@ -952,13 +1562,17 @@
       sq.width = size; sq.height = size;
       const sctx = sq.getContext("2d");
 
+      sctx.fillStyle = "rgba(0,0,0,1)";
+      sctx.fillRect(0,0,size,size);
+
+      const pad = Math.ceil(clamp(BG_BLUR, 0, 200) * 2);
       const cover = Math.max(size / w, size / h) * (BG_SCALE / 100);
       const bw = w * cover, bh = h * cover;
       const bx = (size - bw)/2, by = (size - bh)/2;
 
       sctx.save();
       sctx.filter = `blur(${BG_BLUR}px)`;
-      sctx.drawImage(srcBitmap, bx, by, bw, bh);
+      sctx.drawImage(srcBitmap, bx - pad, by - pad, bw + pad*2, bh + pad*2);
       sctx.restore();
 
       const mx = (size - w)/2, my = (size - h)/2;
@@ -972,7 +1586,7 @@
       if(wmBitmap){
         octx.save();
         octx.globalAlpha = clamp(WM_OPACITY,0,100)/100;
-        octx.drawImage(wmBitmap, 0, 0, wmBitmap.width, wmBitmap.height);
+        octx.drawImage(wmBitmap, 0, 0, OUT_SIZE, OUT_SIZE);
         octx.restore();
       }
 
@@ -983,18 +1597,19 @@
         const lx = LOGO_MARGIN;
         const ly = LOGO_MARGIN;
 
-        const pad = LOGO_PLATE_PADDING;
-        const pl = clamp(lx - pad, 0, OUT_SIZE);
-        const pt = clamp(ly - pad, 0, OUT_SIZE);
-        const pr = clamp(lx + lw + pad, 0, OUT_SIZE);
-        const pb = clamp(ly + lh + pad, 0, OUT_SIZE);
+        const pad2 = LOGO_PLATE_PADDING;
+        const pl = clamp(lx - pad2, 0, OUT_SIZE);
+        const pt = clamp(ly - pad2, 0, OUT_SIZE);
+        const pr = clamp(lx + lw + pad2, 0, OUT_SIZE);
+        const pb = clamp(ly + lh + pad2, 0, OUT_SIZE);
         const pw = pr - pl, ph = pb - pt;
 
         octx.save();
         octx.globalAlpha = clamp(LOGO_PLATE_OPACITY,0,100)/100;
         octx.filter = `blur(${LOGO_PLATE_BLUR}px)`;
         octx.fillStyle = (LOGO_PLATE_COLOR === "white") ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
-        octx.fillRect(pl, pt, pw, ph);
+        roundRect(octx, pl, pt, pw, ph, 18);
+        octx.fill();
         octx.restore();
 
         octx.drawImage(logoBitmap, lx, ly, lw, lh);
@@ -1016,10 +1631,9 @@
 
     function setMode(m){
       mode = m;
-      $("kpiModeIn").textContent = mode==="folder" ? "Thư mục" : mode==="files" ? "Ảnh lẻ" : "—";
+      $("kpiModeIn").textContent = mode==="folder" ? (getLang()==="en" ? "Folder" : "Thư mục") : mode==="files" ? (getLang()==="en" ? "Files" : "Ảnh lẻ") : "—";
     }
 
-    // ✅ ready: chỉ cần có ảnh (logo + watermark mặc định)
     function ready(){
       const ok = items.length && !processing;
       $("btnRun").disabled = !ok;
@@ -1074,12 +1688,11 @@
       $("inPhotos").value = "";
       $("inFolder").value = "";
 
-      // reset chosen overrides
       $("inWM").value = "";
       $("inLogo").value = "";
 
-      setStatus("Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.", "info");
-      snack("Đã xoá.", "ok");
+      setStatus(t("no_result"), "info");
+      snack(t("snack_cleared"), "ok");
       updateKPIs();
     }
 
@@ -1094,13 +1707,12 @@
       renderInputThumbs();
       renderOutputThumbs();
       updateKPIs();
-      snack("Đã xoá ảnh khỏi danh sách.", "ok");
+      snack(t("snack_removed"), "ok");
     }
 
-    // ✅ cộng dồn khi chọn ảnh; chọn folder thì thay thế + hiện folder summary
     function addFiles(fileList, isFolder=false){
       const files = Array.from(fileList || []).filter(isImage);
-      if(!files.length){ snack("Không có ảnh hợp lệ.", "warn"); return; }
+      if(!files.length){ snack(t("snack_invalid"), "warn"); return; }
 
       if(isFolder){
         revokeAll();
@@ -1110,11 +1722,11 @@
 
         const first = files[0];
         const rel = first.webkitRelativePath || "";
-        const folderName = (rel && rel.includes("/")) ? rel.split("/")[0] : "Thư mục";
+        const folderName = (rel && rel.includes("/")) ? rel.split("/")[0] : (getLang()==="en" ? "Folder" : "Thư mục");
         folderInfo = { name: folderName, count: files.length };
 
         $("folderName").textContent = folderInfo.name;
-        $("folderCount").textContent = `${folderInfo.count} ảnh`;
+        $("folderCount").textContent = `${folderInfo.count} ${getLang()==="en" ? "images" : "ảnh"}`;
         $("folderSummary").classList.add("show");
         $("thumbsIn").innerHTML = "";
       }else{
@@ -1144,7 +1756,19 @@
       renderOutputThumbs();
       updateKPIs();
 
-      snack(isFolder ? `Đã chọn thư mục: ${folderInfo.name} (${folderInfo.count} ảnh)` : `Đã thêm ${added} ảnh. Tổng: ${items.length}`, "ok");
+      snack(
+        isFolder
+          ? t("folder_picked", folderInfo.name) // function expects (name,n) but we pass via below:
+          : t("added_n", added),
+        "ok"
+      );
+
+      // fix function arg use:
+      if(isFolder){
+        snack(I18N[getLang()].folder_picked(folderInfo.name, folderInfo.count), "ok");
+      }else{
+        snack(I18N[getLang()].added_n(added, items.length), "ok");
+      }
     }
 
     function renderInputThumbs(){
@@ -1167,7 +1791,7 @@
         const x = document.createElement("button");
         x.className = "xbtn";
         x.type = "button";
-        x.title = "Xoá ảnh";
+        x.title = "Remove";
         x.innerHTML = `<span class="ms sm">close</span>`;
         x.addEventListener("click", ()=> removeItem(it.id));
         imgWrap.appendChild(x);
@@ -1179,12 +1803,7 @@
         name.className = "name";
         name.textContent = it.relPath || it.name;
 
-        const tag = document.createElement("div");
-        tag.className = "tag";
-        tag.innerHTML = `<span class="ms sm">visibility</span><span>Ảnh gốc</span>`;
-
         meta.appendChild(name);
-        meta.appendChild(tag);
 
         card.appendChild(imgWrap);
         card.appendChild(meta);
@@ -1204,7 +1823,6 @@
       $("btnUnselectAll").disabled = !ok;
     }
 
-    // ✅ Kết quả: khi chưa có output -> không hiện gì
     function renderOutputThumbs(){
       const wrap = $("thumbsOut");
       if(!items.some(it => it.outBlob)){
@@ -1239,7 +1857,7 @@
 
         const tag = document.createElement("div");
         tag.className = "tag";
-        tag.innerHTML = `<span class="ms sm">check_circle</span><span>Ảnh kết quả</span>`;
+        tag.innerHTML = `<span class="ms sm">check_circle</span><span>${t("result_tag")}</span>`;
 
         const actions = document.createElement("div");
         actions.className = "actions";
@@ -1265,7 +1883,7 @@
         text.style.display = "inline-flex";
         text.style.gap = "6px";
         text.style.alignItems = "center";
-        text.innerHTML = `<span class="ms sm">check_box</span><span>Chọn</span>`;
+        text.innerHTML = `<span>${t("choose")}</span>`;
 
         lab.appendChild(cb);
         lab.appendChild(text);
@@ -1274,7 +1892,7 @@
         const btnDl = document.createElement("button");
         btnDl.className = "btn mini";
         btnDl.disabled = !it.outBlob || processing;
-        btnDl.innerHTML = `<span class="ms">download</span><span>Tải ảnh</span>`;
+        btnDl.innerHTML = `<span class="ms">download</span><span>${t("download_one")}</span>`;
         btnDl.addEventListener("click", ()=>{
           if(!it.outBlob) return;
           saveAs(it.outBlob, it.outName || (baseName(it.name)+".jpg"));
@@ -1295,12 +1913,11 @@
       updateBatchButtons();
     }
 
-    // ✅ loadAssets: ưu tiên file chọn trong settings, nếu không có thì lấy mặc định assets
     async function loadAssets(){
       const wmFile = $("inWM").files[0];
       const logoFile = $("inLogo").files[0];
 
-      setStatus("Đang load watermark + logo…", "hourglass_top");
+      setStatus(t("status_load_assets"), "hourglass_top");
 
       wmBitmap = wmFile ? await fileToBitmap(wmFile) : await urlToBitmap(DEFAULT_WM_URL);
       logoBitmap = logoFile ? await fileToBitmap(logoFile) : await urlToBitmap(DEFAULT_LOGO_URL);
@@ -1319,7 +1936,7 @@
       addFiles(e.target.files, true);
     });
 
-    // đổi config => output cũ không còn đúng
+    // config change => invalidate outputs
     ["inWM","inLogo","OUT_FORMAT","JPG_QUALITY","OUT_SIZE","BG_BLUR","BG_SCALE","WM_OPACITY","LOGO_TARGET_W","LOGO_MARGIN","LOGO_PLATE_PADDING","LOGO_PLATE_BLUR","LOGO_PLATE_OPACITY","LOGO_PLATE_COLOR"].forEach((id)=>{
       const el = $(id);
       if(!el) return;
@@ -1330,7 +1947,7 @@
       });
     });
 
-    // Drag&Drop (cộng dồn)
+    // Drag&Drop
     const dz = $("dropzone");
     dz.addEventListener("dragover", (e)=>{ e.preventDefault(); dz.classList.add("drag"); });
     dz.addEventListener("dragleave", ()=> dz.classList.remove("drag"));
@@ -1341,7 +1958,7 @@
       if(files && files.length){
         addFiles(files, false);
       }else{
-        snack("Không đọc được dữ liệu kéo thả.", "warn");
+        snack(t("snack_drag_err"), "warn");
       }
     });
 
@@ -1363,19 +1980,21 @@
     $("btnDownloadSelected").addEventListener("click", ()=>{
       if(!isProcessedAll()) return;
       const selected = items.filter(it => it.selected && it.outBlob);
-      if(!selected.length){ snack("Chưa chọn ảnh nào.", "warn"); return; }
+      if(!selected.length){ snack(t("snack_selected_none"), "warn"); return; }
       for(const it of selected){
         saveAs(it.outBlob, it.outName);
       }
-      snack(`Đã tải ${selected.length} ảnh đã chọn.`, "ok");
+      snack(I18N[getLang()].snack_downloaded_n(selected.length), "ok");
     });
 
-    // ===== Settings Modal =====
+    // Settings Modal
     const modal = $("settingsModal");
     function openSettings(){
       modal.classList.add("show");
       modal.setAttribute("aria-hidden","false");
       document.documentElement.style.overflow = "hidden";
+      updateThemeUI();
+      updateLangUI();
     }
     function closeSettings(){
       modal.classList.remove("show");
@@ -1385,20 +2004,71 @@
     $("btnOpenSettings").addEventListener("click", openSettings);
     $("btnOpenSettings2").addEventListener("click", openSettings);
     $("btnCloseSettings").addEventListener("click", closeSettings);
-    $("btnSaveClose").addEventListener("click", ()=>{ snack("Đã lưu cài đặt.", "ok"); closeSettings(); });
+    $("btnSaveClose").addEventListener("click", ()=>{ snack(t("snack_saved"), "ok"); closeSettings(); });
     modal.addEventListener("click", (e)=>{ if(e.target === modal) closeSettings(); });
     document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && modal.classList.contains("show")) closeSettings(); });
+
+    // Presets
+    $("preset1080").addEventListener("click", ()=>{
+      $("OUT_SIZE").value = 1080;
+      $("BG_BLUR").value = 45;
+      $("BG_SCALE").value = 115;
+      $("LOGO_TARGET_W").value = 160;
+      $("LOGO_MARGIN").value = 28;
+      $("zipName").value = "output_1080_logo_wm.zip";
+      snack(t("preset_1080"), "ok");
+      resetOutputs(); renderOutputThumbs(); updateKPIs();
+    });
+    $("preset1350").addEventListener("click", ()=>{
+      $("OUT_SIZE").value = 1350;
+      $("BG_BLUR").value = 55;
+      $("BG_SCALE").value = 118;
+      $("LOGO_TARGET_W").value = 190;
+      $("LOGO_MARGIN").value = 32;
+      $("zipName").value = "output_1350_logo_wm.zip";
+      snack(t("preset_1350"), "ok");
+      resetOutputs(); renderOutputThumbs(); updateKPIs();
+    });
+    $("presetSoft").addEventListener("click", ()=>{
+      $("BG_BLUR").value = Math.max(25, (+$("BG_BLUR").value || 45) - 10);
+      $("BG_SCALE").value = 112;
+      snack(t("blur_softer"), "ok");
+      resetOutputs(); renderOutputThumbs(); updateKPIs();
+    });
+    $("presetStrong").addEventListener("click", ()=>{
+      $("BG_BLUR").value = Math.min(90, (+$("BG_BLUR").value || 45) + 15);
+      $("BG_SCALE").value = 120;
+      snack(t("blur_stronger"), "ok");
+      resetOutputs(); renderOutputThumbs(); updateKPIs();
+    });
 
     // Mobile dock actions
     $("dockUpload").addEventListener("click", ()=> $("uploadCard").scrollIntoView({behavior:"smooth", block:"start"}));
     $("dockSettings").addEventListener("click", openSettings);
     $("dockRun").addEventListener("click", ()=> runProcess());
 
-    // ===== Processing =====
+    // NEW: top toggles
+    $("btnTheme").addEventListener("click", cycleTheme);
+    $("btnLang").addEventListener("click", toggleLang);
+
+    // NEW: modal chips (theme/lang)
+    document.querySelectorAll("[data-theme-pick]").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        setTheme(b.getAttribute("data-theme-pick"));
+        snack(`${t("theme")}: ${getTheme().toUpperCase()}`, "ok");
+      });
+    });
+    document.querySelectorAll("[data-lang-pick]").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        setLang(b.getAttribute("data-lang-pick"));
+      });
+    });
+
+    // Processing
     async function runProcess(){
       try{
         if(!ready()){
-          snack("Thiếu dữ liệu: cần ảnh.", "warn");
+          snack(t("status_need_images"), "warn");
           return;
         }
 
@@ -1428,11 +2098,11 @@
         const total = items.length;
         const zip = new JSZip();
 
-        setStatus("Bắt đầu xử lý…", "auto_fix_high");
+        setStatus(t("status_start"), "auto_fix_high");
 
         for(let i=0;i<total;i++){
           const it = items[i];
-          setStatus(`(${i+1}/${total}) Đang xử lý: ${it.relPath || it.name}`, "auto_fix_high");
+          setStatus(`(${i+1}/${total}) ${getLang()==="en" ? "Processing" : "Đang xử lý"}: ${it.relPath || it.name}`, "auto_fix_high");
           setProgress((i/total)*100);
 
           const srcBitmap = await fileToBitmap(it.file);
@@ -1470,26 +2140,26 @@
         }
 
         setProgress(98);
-        setStatus("Đang đóng gói ZIP…", "archive");
+        setStatus(t("status_zip"), "archive");
         zipAllBlob = await zip.generateAsync({ type:"blob", compression:"DEFLATE" });
 
         setProgress(100);
-        setStatus(`Xử lý xong ${total} ảnh.`, "check_circle");
+        setStatus(I18N[getLang()].status_done(total), "check_circle");
 
         $("btnDownloadAll").disabled = false;
         $("btnDownloadAll").onclick = ()=>{
           const zipName = ($("zipName").value || "output.zip").trim();
           saveAs(zipAllBlob, zipName);
-          snack(`Đã tải ${zipName}`, "ok");
+          snack(I18N[getLang()].snack_downloaded(zipName), "ok");
         };
 
         renderOutputThumbs();
-        snack("Hoàn tất xử lý.", "ok");
+        snack(t("snack_done"), "ok");
         $("thumbsOut").scrollIntoView({ behavior:"smooth", block:"start" });
 
       }catch(err){
         console.error(err);
-        setStatus("Lỗi: " + (err?.message || err), "error");
+        setStatus(I18N[getLang()].status_err(err?.message || err), "error");
         setProgress(0);
         snack(err?.message || String(err), "err");
       }finally{
@@ -1502,11 +2172,15 @@
     $("btnRun").addEventListener("click", runProcess);
     $("btnRun2").addEventListener("click", runProcess);
 
-    // init
+    // init: apply persisted theme/lang
+    updateThemeUI();
+    updateLangUI();
+    applyLang();
+
     setMode("none");
     updateKPIs();
     setProgress(0);
-    setStatus("Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.", "info");
+    setStatus(t("no_result"), "info");
   </script>
 </body>
 </html>
