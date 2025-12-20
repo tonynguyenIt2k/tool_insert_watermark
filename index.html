@@ -1,0 +1,1512 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link rel="icon" href="/logo.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <title>Batch 1:1 + Blur BG + Watermark + Logo </title>
+
+  <!-- 100% Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,650,0,0" />
+
+  <style>
+    :root{
+      color-scheme: light dark;
+
+      --r: 22px;
+      --r2: 26px;
+
+      /* ===== TRUE DARK ===== */
+      --bg0:#05070c;
+      --txt: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.68);
+
+      --panel: rgba(14,18,28,.76);
+      --panel2: rgba(16,22,36,.86);
+      --line: rgba(255,255,255,.12);
+
+      --shadow-sm: 0 12px 30px rgba(0,0,0,.30);
+      --shadow: 0 22px 70px rgba(0,0,0,.40);
+
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --err:#ef4444;
+
+      --accentA: rgba(125,211,252,.20);
+      --accentB: rgba(167,139,250,.16);
+      --accentLine: rgba(125,211,252,.30);
+
+      --snack: rgba(0,0,0,.72);
+
+      --grid: rgba(255,255,255,.05);
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        /* ===== TRUE LIGHT ===== */
+        --bg0:#ffffff;
+        --txt: rgba(17,24,39,.94);
+        --muted: rgba(17,24,39,.64);
+
+        --panel: rgba(255,255,255,.78);
+        --panel2: rgba(246,247,251,.92);
+        --line: rgba(17,24,39,.12);
+
+        --shadow-sm: 0 12px 30px rgba(17,24,39,.12);
+        --shadow: 0 24px 70px rgba(17,24,39,.14);
+
+        --accentA: rgba(59,130,246,.12);
+        --accentB: rgba(168,85,247,.10);
+        --accentLine: rgba(59,130,246,.24);
+
+        --snack: rgba(17,24,39,.80);
+        --grid: rgba(17,24,39,.06);
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--txt);
+      background: var(--bg0);
+
+      /* nền pro hơn: gradient + grid */
+      background-image:
+        radial-gradient(900px 520px at 18% 0%, rgba(125,211,252,.18), transparent 60%),
+        radial-gradient(820px 520px at 95% 15%, rgba(167,139,250,.14), transparent 60%),
+        linear-gradient(180deg, rgba(0,0,0,.20), transparent 35%),
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size:
+        auto, auto, auto,
+        28px 28px,
+        28px 28px;
+      background-position:
+        center, center, center,
+        center, center;
+    }
+
+    /* ===== Icons ===== */
+    .ms{
+      font-family: "Material Symbols Rounded";
+      font-weight: 650;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      vertical-align: middle;
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: "FILL" 0, "wght" 650, "GRAD" 0, "opsz" 24;
+    }
+    .ms.sm{ font-size: 18px; }
+    .ms.xs{ font-size: 16px; }
+
+    /* ===== Layout ===== */
+    .app{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 18px;
+      padding-bottom: 160px;
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 10px 0 14px;
+      backdrop-filter: blur(16px);
+    }
+
+    .topbar-inner{
+      display:flex; gap:12px; align-items:center; justify-content: space-between;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--r2);
+      background: var(--panel);
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand{ display:flex; gap:12px; align-items:center; min-width: 260px; }
+
+    .mark{
+      width:46px; height:46px; border-radius: 18px;
+      background:
+        radial-gradient(14px 14px at 30% 30%, rgba(255,255,255,.55), transparent 60%),
+        linear-gradient(135deg, rgba(125,211,252,.85), rgba(167,139,250,.85));
+      box-shadow: 0 18px 36px rgba(0,0,0,.25);
+      display:grid; place-items:center;
+    }
+    .mark .ms{ font-size: 22px; opacity: .98; }
+
+    h1{ margin:0; font-size: 15px; letter-spacing:.2px; line-height:1.2; }
+    .sub{
+      margin:3px 0 0;
+      font-size:12px;
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center; flex-wrap: wrap;
+    }
+
+    /* ===== Buttons ===== */
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      padding: 11px 14px;
+      border-radius: 16px;
+      cursor:pointer;
+      font-weight: 800;
+      letter-spacing: .15px;
+      transition: transform .08s ease, background .2s ease, opacity .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .btn:hover{ background: rgba(255,255,255,.10); }
+    .btn:active{ transform: scale(.98); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+    .btn.primary{
+      border-color: var(--accentLine);
+      background: linear-gradient(135deg, var(--accentA), var(--accentB));
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg,
+        rgba(125,211,252,.26),
+        rgba(167,139,250,.22)
+      );
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+    }
+    .btn.mini{ padding: 9px 12px; border-radius: 14px; font-size: 12px; }
+    .btn .ms{ font-size: 20px; opacity:.95; }
+    .btn.mini .ms{ font-size: 18px; }
+
+    /* ===== Cards ===== */
+    .card{
+      border:1px solid var(--line);
+      border-radius: var(--r2);
+      background: var(--panel);
+      box-shadow: var(--shadow-sm);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding: 14px 14px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel2);
+      backdrop-filter: blur(14px);
+    }
+    .cardHead h2{
+      margin:0; font-size: 14px; letter-spacing: .2px;
+      display:flex; gap:10px; align-items:center;
+    }
+    .cardHead .desc{ margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .cardBody{ padding: 14px; }
+
+    label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .field{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      outline:none;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .field:focus{
+      border-color: rgba(125,211,252,.45);
+      background: rgba(255,255,255,.09);
+    }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px){ .row{ grid-template-columns: 1fr; } }
+
+    .hint{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+    }
+
+    /* ===== Dropzone ===== */
+    .drop{
+      border: 1.5px dashed rgba(125,211,252,.38);
+      background: linear-gradient(135deg, rgba(125,211,252,.10), rgba(167,139,250,.08));
+      border-radius: var(--r2);
+      padding: 14px;
+      transition: transform .12s ease, border-color .2s ease, background .2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .drop.drag{
+      transform: scale(1.01);
+      border-color: rgba(125,211,252,.70);
+      background: linear-gradient(135deg, rgba(125,211,252,.16), rgba(167,139,250,.12));
+    }
+    .drop .t{ font-weight: 900; margin:0 0 6px; font-size: 13px; display:flex; gap:10px; align-items:center; }
+    .drop .d{ margin:0; font-size: 12px; color: var(--muted); line-height: 1.4; display:flex; gap:8px; align-items:flex-start; }
+
+    /* ===== Progress + status ===== */
+    .progress{
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: rgba(34,197,94,.78);
+      transition: width .18s ease;
+    }
+    .mono{
+      margin-top: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: pre-wrap;
+      display:flex; gap:8px; align-items:flex-start;
+    }
+
+    .preTop{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .badge{
+      padding: 8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      color: var(--txt);
+      display:inline-flex;
+      gap: 8px;
+      align-items:center;
+    }
+
+    /* ===== Thumbs ===== */
+    .thumbs{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 1080px){ .thumbs{ grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 860px){ .thumbs{ grid-template-columns: repeat(3,  1fr); } }
+    @media (max-width: 640px){ .thumbs{ grid-template-columns: repeat(2,  1fr); } }
+
+    /* Kết quả full ngang: tăng cột để nhìn “đã” */
+    @media (min-width: 1024px){
+      #thumbsOut.thumbs{ grid-template-columns: repeat(7, 1fr); }
+    }
+    @media (min-width: 1400px){
+      #thumbsOut.thumbs{ grid-template-columns: repeat(8, 1fr); }
+    }
+
+    .thumb{
+      border:1px solid var(--line);
+      border-radius: 18px;
+      overflow:hidden;
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 12px 26px rgba(0,0,0,.18);
+      display:flex;
+      flex-direction: column;
+    }
+    .imgWrap{
+      position:relative;
+      aspect-ratio: 1/1;
+      background: rgba(255,255,255,.04);
+    }
+    .thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+
+    .xbtn{
+      position:absolute;
+      top: 8px;
+      right: 8px;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.48);
+      backdrop-filter: blur(10px);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, background .2s ease;
+    }
+    .xbtn:hover{ background: rgba(0,0,0,.62); }
+    .xbtn:active{ transform: scale(.96); }
+    @media (prefers-color-scheme: light){
+      .xbtn{ background: rgba(255,255,255,.85); border-color: rgba(0,0,0,.10); }
+      .xbtn:hover{ background: rgba(255,255,255,.96); }
+    }
+
+    .meta{ padding: 10px 10px 12px; display:flex; flex-direction: column; gap: 8px; }
+    .name{ font-size: 12px; line-height: 1.25; word-break: break-word; color: var(--txt); opacity:.95; }
+    .tag{ display:inline-flex; align-items:center; gap:6px; font-size: 12px; color: var(--muted); }
+    .tag .ms{ font-size: 18px; opacity:.9; }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content: space-between;
+    }
+
+    .sel{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--txt);
+      opacity:.92;
+      user-select:none;
+      cursor:pointer;
+    }
+    .sel input{ width: 16px; height: 16px; }
+
+    /* ===== Bottom bar (desktop) ===== */
+    .bottomBar{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 12px;
+      z-index: 55;
+      width: min(1200px, calc(100vw - 24px));
+      border:1px solid var(--line);
+      border-radius: var(--r2);
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-sm);
+      padding: 10px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .small{ font-size: 12px; color: var(--muted); display:flex; align-items:center; gap:8px; }
+
+    /* ===== Snackbar ===== */
+    .snackbar{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      z-index: 120;
+      min-width: 260px;
+      max-width: calc(100vw - 24px);
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: var(--snack);
+      color: rgba(255,255,255,.95);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow);
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      backdrop-filter: blur(12px);
+    }
+    .snackbar.show{
+      opacity:1;
+      pointer-events:auto;
+      transform: translateX(-50%) translateY(-2px);
+    }
+    .snackbar .msg{ font-size: 13px; line-height: 1.3; flex: 1; display:flex; gap:10px; align-items:flex-start; }
+    .snackbar .x{ cursor:pointer; user-select:none; opacity:.85; font-weight: 900; padding: 0 6px; display:flex; align-items:center; }
+
+    /* ===== Folder summary ===== */
+    .folderSummary{
+      display:none;
+      border:1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      padding: 14px;
+      align-items:center;
+      gap: 12px;
+    }
+    .folderSummary.show{ display:flex; }
+    .folderIcon{
+      width:44px; height:44px; border-radius: 16px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      flex:0 0 auto;
+    }
+    .folderTitle{ font-weight: 900; font-size: 13px; }
+    .folderMeta{ font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ===== Modal settings ===== */
+    .modal{
+      position:fixed; inset:0;
+      z-index: 110;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      background: rgba(0,0,0,.52);
+      backdrop-filter: blur(12px);
+    }
+    .modal.show{ display:flex; }
+    .sheet{
+      width: min(760px, 100%);
+      border-radius: 22px;
+      border:1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      transform: translateY(6px);
+      animation: pop .16s ease forwards;
+    }
+    @keyframes pop{ to{ transform: translateY(0); } }
+    .sheetHead{
+      padding: 14px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel2);
+    }
+    .sheetHead .ttl{
+      display:flex; gap:10px; align-items:center;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .sheetBody{ padding: 14px; }
+
+    /* ===== Mobile Dock ===== */
+    .mobileDock{
+      position:fixed;
+      left:0; right:0; bottom:0;
+      height: 68px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      z-index: 95;
+      display:none;
+      align-items:center;
+      justify-content: space-around;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .dockBtn{
+      border:0;
+      background: transparent;
+      color: var(--txt);
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 4px;
+      padding: 8px 10px;
+      border-radius: 16px;
+      cursor:pointer;
+      min-width: 84px;
+      transition: transform .08s ease, background .2s ease;
+    }
+    .dockBtn:hover{ background: rgba(255,255,255,.06); }
+    .dockBtn:active{ transform: scale(.98); }
+    .dockBtn .ms{ font-size: 26px; }
+    .dockLab{ font-size: 11px; color: var(--muted); }
+
+    @media (max-width: 768px){
+      .mobileDock{ display:flex; }
+      .bottomBar{ display:none; }
+      .app{ padding-bottom: 140px; }
+      .modal{ align-items:flex-end; }
+      .sheet{
+        width: 100%;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+    }
+
+    /* ===== KEY FIX: Result FULL WIDTH nhưng NỘI DUNG vẫn “đẹp” ===== */
+    #resultWrap{
+      width: 100%;
+      margin-top: 14px;
+      padding: 0 18px;
+    }
+    @media (min-width: 1024px){
+      #resultWrap{
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        margin-left: -50vw;
+        padding: 0 26px;
+      }
+      #resultInner{
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+    }
+    .resultCard{ border-radius: 28px; }
+    .resultCard .cardBody{ padding: 16px; }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="mark"><span class="ms">photo_auto_merge</span></div>
+          <div>
+            <h1>Batch Ảnh 1:1 • Blur nền • Watermark • Logo + Glass Plate</h1>
+            <div class="sub">
+              <span class="ms xs">upload</span><span>Preview ảnh gốc</span>
+              <span class="ms xs">arrow_forward</span><span>Xử lý</span>
+              <span class="ms xs">arrow_forward</span><span>Preview kết quả</span>
+              <span class="ms xs">download</span><span>Tải 1 hoặc tải nhiều bằng tick</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+          <button class="btn mini" id="btnOpenSettings">
+            <span class="ms">settings</span> Cài đặt
+          </button>
+          <button class="btn danger" id="btnClear" disabled>
+            <span class="ms">delete_sweep</span> Xoá
+          </button>
+          <button class="btn primary" id="btnRun" disabled>
+            <span class="ms">auto_fix_high</span> Xử lý
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Upload + Input Preview -->
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2><span class="ms">cloud_upload</span> Ảnh gốc (Preview bên trên)</h2>
+            <div class="desc">
+              Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
+              <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và <code>./assets/watermark/watermark.png</code>
+              (có thể chọn lại trong Cài đặt để override).
+            </div>
+          </div>
+        </div>
+
+        <div class="cardBody" id="uploadCard">
+          <div class="drop" id="dropzone">
+            <p class="t"><span class="ms">upload</span> Kéo thả ảnh vào đây</p>
+            <p class="d"><span class="ms xs">info</span><span>Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).</span></p>
+
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>Chọn nhiều ảnh (cộng dồn)</label>
+                <input id="inPhotos" class="field" type="file" accept="image/*" multiple />
+              </div>
+              <div>
+                <label>Chọn thư mục ảnh (Chrome/Edge)</label>
+                <input id="inFolder" class="field" type="file" accept="image/*" multiple webkitdirectory directory />
+              </div>
+            </div>
+
+            <div class="hint">
+              <span class="ms sm">tips_and_updates</span>
+              <div>Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview thumbnails).</div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="preTop">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <span class="badge"><span class="ms sm">photo_library</span> Ảnh: <b id="kpiCountIn">0</b></span>
+              <span class="badge"><span class="ms sm">folder_open</span> Chế độ: <b id="kpiModeIn">—</b></span>
+            </div>
+          </div>
+
+          <div class="folderSummary" id="folderSummary">
+            <div class="folderIcon"><span class="ms">folder</span></div>
+            <div>
+              <div class="folderTitle" id="folderName">—</div>
+              <div class="folderMeta" id="folderCount">0 ảnh</div>
+            </div>
+          </div>
+
+          <div class="thumbs" id="thumbsIn"></div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card">
+        <div class="cardHead">
+          <div>
+            <h2><span class="ms">info</span> Gợi ý</h2>
+            <div class="desc">Mở <b>Cài đặt</b> để chọn Watermark/Logo + format PNG/JPG + thông số.</div>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="hint">
+            <span class="ms sm">verified_user</span>
+            <div><b>PNG</b> phù hợp khi muốn giữ nét (file lớn hơn). <b>JPG</b nhẹ hơn, tuỳ chọn quality.</div>
+          </div>
+          <div class="hint">
+            <span class="ms sm">tips_and_updates</span>
+            <div>Watermark 1080×1080 sẽ khớp vị trí đẹp nhất.</div>
+          </div>
+          <div class="hint">
+            <span class="ms sm">folder_open</span>
+            <div>Đặt file mặc định: <b>assets/logo/logo.png</b> và <b>assets/watermark/watermark.png</b>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT FULL WIDTH + INNER CONTAINER -->
+  <div id="resultWrap">
+    <div id="resultInner">
+      <div class="card resultCard">
+        <div class="cardHead">
+          <div>
+            <h2><span class="ms">gallery_thumbnail</span> Kết quả (Preview bên dưới)</h2>
+            <div class="desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.</div>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="preTop">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <span class="badge"><span class="ms sm">photo_library</span> Ảnh: <b id="kpiCountOut">0</b></span>
+              <span class="badge"><span class="ms sm">verified</span> Sẵn sàng: <b id="kpiReady">No</b></span>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+              <button class="btn mini" id="btnSelectAll" disabled>
+                <span class="ms">select_all</span> Chọn tất
+              </button>
+              <button class="btn mini" id="btnUnselectAll" disabled>
+                <span class="ms">deselect</span> Bỏ chọn
+              </button>
+              <button class="btn mini" id="btnDownloadSelected" disabled>
+                <span class="ms">download</span> Tải đã chọn
+              </button>
+              <button class="btn mini" id="btnDownloadAll" disabled>
+                <span class="ms">archive</span> Tải tất cả (ZIP)
+              </button>
+            </div>
+          </div>
+
+          <div class="progress"><div class="bar" id="bar"></div></div>
+          <div class="mono" id="status"><span class="ms xs">info</span><span>Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.</span></div>
+
+          <div style="height:10px"></div>
+          <div class="thumbs" id="thumbsOut"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom bar (desktop only) -->
+  <div class="bottomBar">
+    <div class="small">
+      <span class="ms sm">info</span>
+      <span id="bottomHint">Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.</span>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+      <button class="btn mini" id="btnOpenSettings2">
+        <span class="ms">settings</span> Cài đặt
+      </button>
+      <button class="btn danger" id="btnClear2" disabled>
+        <span class="ms">delete</span> Xoá
+      </button>
+      <button class="btn primary" id="btnRun2" disabled>
+        <span class="ms">auto_fix_high</span> Xử lý
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Dock -->
+  <div class="mobileDock">
+    <button class="dockBtn" id="dockUpload">
+      <span class="ms">upload</span>
+      <span class="dockLab">Upload</span>
+    </button>
+    <button class="dockBtn" id="dockSettings">
+      <span class="ms">settings</span>
+      <span class="dockLab">Cài đặt</span>
+    </button>
+    <button class="dockBtn" id="dockRun">
+      <span class="ms">play_arrow</span>
+      <span class="dockLab">Xử lý</span>
+    </button>
+  </div>
+
+  <!-- Settings Popup (Modal) -->
+  <div class="modal" id="settingsModal" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Cài đặt">
+      <div class="sheetHead">
+        <div class="ttl"><span class="ms">tune</span> Cài đặt</div>
+        <button class="btn mini" id="btnCloseSettings"><span class="ms">close</span></button>
+      </div>
+      <div class="sheetBody">
+        <div class="row">
+          <div>
+            <label>Watermark PNG overlay (mặc định: ./assets/watermark.png)</label>
+            <input id="inWM" class="field" type="file" accept="image/png" />
+          </div>
+          <div>
+            <label>Logo PNG (mặc định: ./assets/logo.png)</label>
+            <input id="inLogo" class="field" type="file" accept="image/png" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Định dạng xuất</label>
+            <select id="OUT_FORMAT" class="field">
+              <option value="jpg" selected>JPG</option>
+              <option value="png">PNG</option>
+            </select>
+          </div>
+          <div>
+            <label>JPG_QUALITY (1–12) — chỉ dùng khi JPG</label>
+            <input id="JPG_QUALITY" class="field" type="number" value="10" min="1" max="12" step="1">
+          </div>
+        </div>
+
+        <div class="hint">
+          <span class="ms sm">verified_user</span>
+          <div>Watermark 1080×1080 sẽ khớp vị trí đẹp nhất.</div>
+        </div>
+
+        <hr style="margin:14px 0; border-color:var(--line)">
+
+        <div class="row">
+          <div>
+            <label>OUT_SIZE</label>
+            <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
+          </div>
+          <div>
+            <label>BG_BLUR</label>
+            <input id="BG_BLUR" class="field" type="number" value="45" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>BG_SCALE (%)</label>
+            <input id="BG_SCALE" class="field" type="number" value="115" min="100" step="1">
+          </div>
+          <div>
+            <label>WM_OPACITY (%)</label>
+            <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>LOGO_TARGET_W</label>
+            <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
+          </div>
+          <div>
+            <label>LOGO_MARGIN</label>
+            <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>PLATE_PADDING</label>
+            <input id="LOGO_PLATE_PADDING" class="field" type="number" value="14" min="0" step="1">
+          </div>
+          <div>
+            <label>PLATE_BLUR</label>
+            <input id="LOGO_PLATE_BLUR" class="field" type="number" value="18" min="0" step="1">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>PLATE_OPACITY (%)</label>
+            <input id="LOGO_PLATE_OPACITY" class="field" type="number" value="40" min="0" max="100" step="1">
+          </div>
+          <div>
+            <label>PLATE_COLOR</label>
+            <select id="LOGO_PLATE_COLOR" class="field">
+              <option value="black" selected>black</option>
+              <option value="white">white</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Tên ZIP (tải tất cả)</label>
+            <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn primary" id="btnSaveClose" type="button">
+              <span class="ms">done</span> Lưu & Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSZip + FileSaver -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <div class="snackbar" id="snack">
+    <div class="msg" id="snackMsg"><span class="ms sm">info</span><span>…</span></div>
+    <div class="x" id="snackClose"><span class="ms sm">close</span></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const clamp = (n,a,b)=> Math.max(a, Math.min(b,n));
+    const baseName = (name)=> name.replace(/\.[^.]+$/,'');
+    const quality12ToCanvasQ = (q12)=> clamp(q12/12, 0.08, 1);
+    const isImage = (f)=> /^image\//.test(f.type);
+
+    function setStatus(text, icon="info"){
+      $("status").innerHTML = `<span class="ms xs">${icon}</span><span>${text}</span>`;
+    }
+    function setProgress(pct){ $("bar").style.width = `${clamp(pct,0,100).toFixed(1)}%`; }
+
+    function snack(msg, type="info"){
+      const icon = type==="ok" ? "check_circle" : type==="err" ? "error" : type==="warn" ? "warning" : "info";
+      $("snackMsg").innerHTML = `<span class="ms sm">${icon}</span><span>${msg}</span>`;
+      const el = $("snack");
+      el.classList.add("show");
+      clearTimeout(snack._t);
+      snack._t = setTimeout(()=> el.classList.remove("show"), 2600);
+    }
+    $("snackClose").addEventListener("click", ()=> $("snack").classList.remove("show"));
+
+    async function fileToBitmap(file){
+      const url = URL.createObjectURL(file);
+      const blob = await fetch(url).then(r=>r.blob());
+      const bmp = await createImageBitmap(blob);
+      URL.revokeObjectURL(url);
+      return bmp;
+    }
+
+    async function urlToBitmap(url){
+      const res = await fetch(url);
+      if(!res.ok) throw new Error("Không load được: " + url);
+      const blob = await res.blob();
+      return await createImageBitmap(blob);
+    }
+
+    const DEFAULT_WM_URL = "./assets/watermark/watermark.png";
+    const DEFAULT_LOGO_URL = "./assets/logo/logo.png";
+
+    function canvasToBlob(canvas, format, quality){
+      return new Promise((resolve)=>{
+        if(format === "png"){
+          canvas.toBlob(resolve, "image/png");
+        }else{
+          canvas.toBlob(resolve, "image/jpeg", quality);
+        }
+      });
+    }
+
+    function renderOne({
+      srcBitmap, wmBitmap, logoBitmap,
+      OUT_SIZE, BG_BLUR, BG_SCALE,
+      LOGO_TARGET_W, LOGO_MARGIN,
+      LOGO_PLATE_PADDING, LOGO_PLATE_BLUR,
+      LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
+      WM_OPACITY
+    }){
+      const w = srcBitmap.width, h = srcBitmap.height;
+      const size = Math.max(w,h);
+
+      const sq = document.createElement("canvas");
+      sq.width = size; sq.height = size;
+      const sctx = sq.getContext("2d");
+
+      const cover = Math.max(size / w, size / h) * (BG_SCALE / 100);
+      const bw = w * cover, bh = h * cover;
+      const bx = (size - bw)/2, by = (size - bh)/2;
+
+      sctx.save();
+      sctx.filter = `blur(${BG_BLUR}px)`;
+      sctx.drawImage(srcBitmap, bx, by, bw, bh);
+      sctx.restore();
+
+      const mx = (size - w)/2, my = (size - h)/2;
+      sctx.drawImage(srcBitmap, mx, my, w, h);
+
+      const out = document.createElement("canvas");
+      out.width = OUT_SIZE; out.height = OUT_SIZE;
+      const octx = out.getContext("2d");
+      octx.drawImage(sq, 0, 0, OUT_SIZE, OUT_SIZE);
+
+      if(wmBitmap){
+        octx.save();
+        octx.globalAlpha = clamp(WM_OPACITY,0,100)/100;
+        octx.drawImage(wmBitmap, 0, 0, wmBitmap.width, wmBitmap.height);
+        octx.restore();
+      }
+
+      if(logoBitmap){
+        const scale = LOGO_TARGET_W / logoBitmap.width;
+        const lw = logoBitmap.width * scale;
+        const lh = logoBitmap.height * scale;
+        const lx = LOGO_MARGIN;
+        const ly = LOGO_MARGIN;
+
+        const pad = LOGO_PLATE_PADDING;
+        const pl = clamp(lx - pad, 0, OUT_SIZE);
+        const pt = clamp(ly - pad, 0, OUT_SIZE);
+        const pr = clamp(lx + lw + pad, 0, OUT_SIZE);
+        const pb = clamp(ly + lh + pad, 0, OUT_SIZE);
+        const pw = pr - pl, ph = pb - pt;
+
+        octx.save();
+        octx.globalAlpha = clamp(LOGO_PLATE_OPACITY,0,100)/100;
+        octx.filter = `blur(${LOGO_PLATE_BLUR}px)`;
+        octx.fillStyle = (LOGO_PLATE_COLOR === "white") ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
+        octx.fillRect(pl, pt, pw, ph);
+        octx.restore();
+
+        octx.drawImage(logoBitmap, lx, ly, lw, lh);
+      }
+
+      return out;
+    }
+
+    // State
+    let mode = "none";
+    let folderInfo = null;
+    let items = [];
+    let wmBitmap = null, logoBitmap = null;
+    let processing = false;
+    let zipAllBlob = null;
+
+    const uid = ()=> Math.random().toString(36).slice(2,10);
+    const isSameFile = (a,b)=> a.name===b.name && a.size===b.size && a.lastModified===b.lastModified;
+
+    function setMode(m){
+      mode = m;
+      $("kpiModeIn").textContent = mode==="folder" ? "Thư mục" : mode==="files" ? "Ảnh lẻ" : "—";
+    }
+
+    // ✅ ready: chỉ cần có ảnh (logo + watermark mặc định)
+    function ready(){
+      const ok = items.length && !processing;
+      $("btnRun").disabled = !ok;
+      $("btnRun2").disabled = !ok;
+
+      const canClear = (items.length || $("inWM").files[0] || $("inLogo").files[0]) && !processing;
+      $("btnClear").disabled = !canClear;
+      $("btnClear2").disabled = !canClear;
+
+      $("kpiReady").textContent = ok ? "Yes" : "No";
+      return ok;
+    }
+
+    function updateKPIs(){
+      $("kpiCountIn").textContent = String(items.length);
+      $("kpiCountOut").textContent = String(items.length);
+      ready();
+    }
+
+    function resetOutputs(){
+      zipAllBlob = null;
+      for(const it of items){
+        it.outBlob = null;
+        it.outName = null;
+        if(it.outURL){ URL.revokeObjectURL(it.outURL); it.outURL = null; }
+      }
+      $("btnDownloadAll").disabled = true;
+      $("btnDownloadSelected").disabled = true;
+      $("btnSelectAll").disabled = true;
+      $("btnUnselectAll").disabled = true;
+    }
+
+    function revokeAll(){
+      for(const it of items){
+        if(it.inURL) URL.revokeObjectURL(it.inURL);
+        if(it.outURL) URL.revokeObjectURL(it.outURL);
+      }
+    }
+
+    function clearAll(){
+      revokeAll();
+      items = [];
+      mode = "none";
+      folderInfo = null;
+      resetOutputs();
+      setMode("none");
+      setProgress(0);
+
+      $("thumbsIn").innerHTML = "";
+      $("thumbsOut").innerHTML = "";
+      $("folderSummary").classList.remove("show");
+      $("inPhotos").value = "";
+      $("inFolder").value = "";
+
+      // reset chosen overrides
+      $("inWM").value = "";
+      $("inLogo").value = "";
+
+      setStatus("Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.", "info");
+      snack("Đã xoá.", "ok");
+      updateKPIs();
+    }
+
+    function removeItem(id){
+      const idx = items.findIndex(x=>x.id===id);
+      if(idx < 0) return;
+      const [rm] = items.splice(idx, 1);
+      if(rm?.inURL) URL.revokeObjectURL(rm.inURL);
+      if(rm?.outURL) URL.revokeObjectURL(rm.outURL);
+
+      resetOutputs();
+      renderInputThumbs();
+      renderOutputThumbs();
+      updateKPIs();
+      snack("Đã xoá ảnh khỏi danh sách.", "ok");
+    }
+
+    // ✅ cộng dồn khi chọn ảnh; chọn folder thì thay thế + hiện folder summary
+    function addFiles(fileList, isFolder=false){
+      const files = Array.from(fileList || []).filter(isImage);
+      if(!files.length){ snack("Không có ảnh hợp lệ.", "warn"); return; }
+
+      if(isFolder){
+        revokeAll();
+        items = [];
+        folderInfo = null;
+        setMode("folder");
+
+        const first = files[0];
+        const rel = first.webkitRelativePath || "";
+        const folderName = (rel && rel.includes("/")) ? rel.split("/")[0] : "Thư mục";
+        folderInfo = { name: folderName, count: files.length };
+
+        $("folderName").textContent = folderInfo.name;
+        $("folderCount").textContent = `${folderInfo.count} ảnh`;
+        $("folderSummary").classList.add("show");
+        $("thumbsIn").innerHTML = "";
+      }else{
+        setMode("files");
+        $("folderSummary").classList.remove("show");
+      }
+
+      let added = 0;
+      for(const f of files){
+        if(items.some(it => isSameFile(it.file, f))) continue;
+        items.push({
+          id: uid(),
+          file: f,
+          name: f.name,
+          relPath: f.webkitRelativePath || "",
+          inURL: URL.createObjectURL(f),
+          outBlob: null,
+          outURL: null,
+          outName: null,
+          selected: true
+        });
+        added++;
+      }
+
+      resetOutputs();
+      if(!isFolder) renderInputThumbs();
+      renderOutputThumbs();
+      updateKPIs();
+
+      snack(isFolder ? `Đã chọn thư mục: ${folderInfo.name} (${folderInfo.count} ảnh)` : `Đã thêm ${added} ảnh. Tổng: ${items.length}`, "ok");
+    }
+
+    function renderInputThumbs(){
+      const wrap = $("thumbsIn");
+      wrap.innerHTML = "";
+      if(mode === "folder") return;
+
+      for(const it of items){
+        const card = document.createElement("div");
+        card.className = "thumb";
+
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "imgWrap";
+
+        const img = document.createElement("img");
+        img.src = it.inURL;
+        img.alt = it.name;
+        imgWrap.appendChild(img);
+
+        const x = document.createElement("button");
+        x.className = "xbtn";
+        x.type = "button";
+        x.title = "Xoá ảnh";
+        x.innerHTML = `<span class="ms sm">close</span>`;
+        x.addEventListener("click", ()=> removeItem(it.id));
+        imgWrap.appendChild(x);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = it.relPath || it.name;
+
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        tag.innerHTML = `<span class="ms sm">visibility</span><span>Ảnh gốc</span>`;
+
+        meta.appendChild(name);
+        meta.appendChild(tag);
+
+        card.appendChild(imgWrap);
+        card.appendChild(meta);
+        wrap.appendChild(card);
+      }
+    }
+
+    function isProcessedAll(){
+      return items.length && items.every(it => !!it.outBlob && !!it.outURL);
+    }
+
+    function updateBatchButtons(){
+      const ok = isProcessedAll() && !processing;
+      $("btnDownloadAll").disabled = !ok;
+      $("btnDownloadSelected").disabled = !ok || !items.some(it=>it.selected);
+      $("btnSelectAll").disabled = !ok;
+      $("btnUnselectAll").disabled = !ok;
+    }
+
+    // ✅ Kết quả: khi chưa có output -> không hiện gì
+    function renderOutputThumbs(){
+      const wrap = $("thumbsOut");
+      if(!items.some(it => it.outBlob)){
+        wrap.innerHTML = "";
+        updateBatchButtons();
+        return;
+      }
+
+      wrap.innerHTML = "";
+      const processedAll = isProcessedAll();
+
+      for(const it of items){
+        if(!it.outBlob || !it.outURL) continue;
+
+        const card = document.createElement("div");
+        card.className = "thumb";
+
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "imgWrap";
+
+        const img = document.createElement("img");
+        img.src = it.outURL;
+        img.alt = it.name;
+        imgWrap.appendChild(img);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = it.relPath || it.name;
+
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        tag.innerHTML = `<span class="ms sm">check_circle</span><span>Ảnh kết quả</span>`;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const left = document.createElement("div");
+        left.style.display = "flex";
+        left.style.gap = "10px";
+        left.style.alignItems = "center";
+
+        const lab = document.createElement("label");
+        lab.className = "sel";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!it.selected;
+        cb.disabled = !processedAll || processing;
+        cb.addEventListener("change", (ev)=>{
+          it.selected = ev.target.checked;
+          updateBatchButtons();
+        });
+
+        const text = document.createElement("span");
+        text.style.display = "inline-flex";
+        text.style.gap = "6px";
+        text.style.alignItems = "center";
+        text.innerHTML = `<span class="ms sm">check_box</span><span>Chọn</span>`;
+
+        lab.appendChild(cb);
+        lab.appendChild(text);
+        left.appendChild(lab);
+
+        const btnDl = document.createElement("button");
+        btnDl.className = "btn mini";
+        btnDl.disabled = !it.outBlob || processing;
+        btnDl.innerHTML = `<span class="ms">download</span><span>Tải ảnh</span>`;
+        btnDl.addEventListener("click", ()=>{
+          if(!it.outBlob) return;
+          saveAs(it.outBlob, it.outName || (baseName(it.name)+".jpg"));
+        });
+
+        actions.appendChild(left);
+        actions.appendChild(btnDl);
+
+        meta.appendChild(name);
+        meta.appendChild(tag);
+        meta.appendChild(actions);
+
+        card.appendChild(imgWrap);
+        card.appendChild(meta);
+        wrap.appendChild(card);
+      }
+
+      updateBatchButtons();
+    }
+
+    // ✅ loadAssets: ưu tiên file chọn trong settings, nếu không có thì lấy mặc định assets
+    async function loadAssets(){
+      const wmFile = $("inWM").files[0];
+      const logoFile = $("inLogo").files[0];
+
+      setStatus("Đang load watermark + logo…", "hourglass_top");
+
+      wmBitmap = wmFile ? await fileToBitmap(wmFile) : await urlToBitmap(DEFAULT_WM_URL);
+      logoBitmap = logoFile ? await fileToBitmap(logoFile) : await urlToBitmap(DEFAULT_LOGO_URL);
+
+      return true;
+    }
+
+    // Upload events
+    $("inPhotos").addEventListener("change", (e)=>{
+      addFiles(e.target.files, false);
+      e.target.value = "";
+    });
+
+    $("inFolder").addEventListener("change", (e)=>{
+      $("inPhotos").value = "";
+      addFiles(e.target.files, true);
+    });
+
+    // đổi config => output cũ không còn đúng
+    ["inWM","inLogo","OUT_FORMAT","JPG_QUALITY","OUT_SIZE","BG_BLUR","BG_SCALE","WM_OPACITY","LOGO_TARGET_W","LOGO_MARGIN","LOGO_PLATE_PADDING","LOGO_PLATE_BLUR","LOGO_PLATE_OPACITY","LOGO_PLATE_COLOR"].forEach((id)=>{
+      const el = $(id);
+      if(!el) return;
+      el.addEventListener("change", ()=>{
+        resetOutputs();
+        renderOutputThumbs();
+        updateKPIs();
+      });
+    });
+
+    // Drag&Drop (cộng dồn)
+    const dz = $("dropzone");
+    dz.addEventListener("dragover", (e)=>{ e.preventDefault(); dz.classList.add("drag"); });
+    dz.addEventListener("dragleave", ()=> dz.classList.remove("drag"));
+    dz.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      dz.classList.remove("drag");
+      const files = e.dataTransfer?.files;
+      if(files && files.length){
+        addFiles(files, false);
+      }else{
+        snack("Không đọc được dữ liệu kéo thả.", "warn");
+      }
+    });
+
+    // Clear
+    $("btnClear").addEventListener("click", clearAll);
+    $("btnClear2").addEventListener("click", clearAll);
+
+    // Batch select
+    $("btnSelectAll").addEventListener("click", ()=>{
+      for(const it of items) it.selected = true;
+      renderOutputThumbs();
+    });
+    $("btnUnselectAll").addEventListener("click", ()=>{
+      for(const it of items) it.selected = false;
+      renderOutputThumbs();
+    });
+
+    // Batch download selected
+    $("btnDownloadSelected").addEventListener("click", ()=>{
+      if(!isProcessedAll()) return;
+      const selected = items.filter(it => it.selected && it.outBlob);
+      if(!selected.length){ snack("Chưa chọn ảnh nào.", "warn"); return; }
+      for(const it of selected){
+        saveAs(it.outBlob, it.outName);
+      }
+      snack(`Đã tải ${selected.length} ảnh đã chọn.`, "ok");
+    });
+
+    // ===== Settings Modal =====
+    const modal = $("settingsModal");
+    function openSettings(){
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden","false");
+      document.documentElement.style.overflow = "hidden";
+    }
+    function closeSettings(){
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden","true");
+      document.documentElement.style.overflow = "";
+    }
+    $("btnOpenSettings").addEventListener("click", openSettings);
+    $("btnOpenSettings2").addEventListener("click", openSettings);
+    $("btnCloseSettings").addEventListener("click", closeSettings);
+    $("btnSaveClose").addEventListener("click", ()=>{ snack("Đã lưu cài đặt.", "ok"); closeSettings(); });
+    modal.addEventListener("click", (e)=>{ if(e.target === modal) closeSettings(); });
+    document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && modal.classList.contains("show")) closeSettings(); });
+
+    // Mobile dock actions
+    $("dockUpload").addEventListener("click", ()=> $("uploadCard").scrollIntoView({behavior:"smooth", block:"start"}));
+    $("dockSettings").addEventListener("click", openSettings);
+    $("dockRun").addEventListener("click", ()=> runProcess());
+
+    // ===== Processing =====
+    async function runProcess(){
+      try{
+        if(!ready()){
+          snack("Thiếu dữ liệu: cần ảnh.", "warn");
+          return;
+        }
+
+        processing = true;
+        resetOutputs();
+        updateKPIs();
+        setProgress(0);
+
+        await loadAssets();
+
+        const cfg = {
+          OUT_FORMAT: ($("OUT_FORMAT").value || "jpg").toLowerCase(),
+          OUT_SIZE: +$("OUT_SIZE").value || 1080,
+          BG_BLUR: +$("BG_BLUR").value || 45,
+          BG_SCALE: +$("BG_SCALE").value || 115,
+          LOGO_TARGET_W: +$("LOGO_TARGET_W").value || 160,
+          LOGO_MARGIN: +$("LOGO_MARGIN").value || 28,
+          LOGO_PLATE_PADDING: +$("LOGO_PLATE_PADDING").value || 14,
+          LOGO_PLATE_BLUR: +$("LOGO_PLATE_BLUR").value || 18,
+          LOGO_PLATE_OPACITY: +$("LOGO_PLATE_OPACITY").value || 40,
+          LOGO_PLATE_COLOR: $("LOGO_PLATE_COLOR").value || "black",
+          WM_OPACITY: +$("WM_OPACITY").value || 100,
+          JPG_QUALITY: +$("JPG_QUALITY").value || 10
+        };
+
+        const q = quality12ToCanvasQ(cfg.JPG_QUALITY);
+        const total = items.length;
+        const zip = new JSZip();
+
+        setStatus("Bắt đầu xử lý…", "auto_fix_high");
+
+        for(let i=0;i<total;i++){
+          const it = items[i];
+          setStatus(`(${i+1}/${total}) Đang xử lý: ${it.relPath || it.name}`, "auto_fix_high");
+          setProgress((i/total)*100);
+
+          const srcBitmap = await fileToBitmap(it.file);
+
+          const outCanvas = renderOne({
+            srcBitmap, wmBitmap, logoBitmap,
+            OUT_SIZE: cfg.OUT_SIZE,
+            BG_BLUR: cfg.BG_BLUR,
+            BG_SCALE: cfg.BG_SCALE,
+            LOGO_TARGET_W: cfg.LOGO_TARGET_W,
+            LOGO_MARGIN: cfg.LOGO_MARGIN,
+            LOGO_PLATE_PADDING: cfg.LOGO_PLATE_PADDING,
+            LOGO_PLATE_BLUR: cfg.LOGO_PLATE_BLUR,
+            LOGO_PLATE_OPACITY: cfg.LOGO_PLATE_OPACITY,
+            LOGO_PLATE_COLOR: cfg.LOGO_PLATE_COLOR,
+            WM_OPACITY: cfg.WM_OPACITY
+          });
+
+          const ext = cfg.OUT_FORMAT === "png" ? "png" : "jpg";
+          const blob = await canvasToBlob(outCanvas, ext, q);
+          const outName = baseName(it.name) + "." + ext;
+
+          it.outBlob = blob;
+          it.outName = outName;
+
+          if(it.outURL) URL.revokeObjectURL(it.outURL);
+          it.outURL = URL.createObjectURL(blob);
+
+          const rel = it.relPath ? it.relPath.replace(/\\/g,"/") : it.name;
+          const relDir = rel.includes("/") ? rel.split("/").slice(0,-1).join("/") : "";
+          const fullPath = relDir ? `${relDir}/${outName}` : outName;
+          zip.file(fullPath, blob);
+
+          if(srcBitmap.close) srcBitmap.close();
+        }
+
+        setProgress(98);
+        setStatus("Đang đóng gói ZIP…", "archive");
+        zipAllBlob = await zip.generateAsync({ type:"blob", compression:"DEFLATE" });
+
+        setProgress(100);
+        setStatus(`Xử lý xong ${total} ảnh.`, "check_circle");
+
+        $("btnDownloadAll").disabled = false;
+        $("btnDownloadAll").onclick = ()=>{
+          const zipName = ($("zipName").value || "output.zip").trim();
+          saveAs(zipAllBlob, zipName);
+          snack(`Đã tải ${zipName}`, "ok");
+        };
+
+        renderOutputThumbs();
+        snack("Hoàn tất xử lý.", "ok");
+        $("thumbsOut").scrollIntoView({ behavior:"smooth", block:"start" });
+
+      }catch(err){
+        console.error(err);
+        setStatus("Lỗi: " + (err?.message || err), "error");
+        setProgress(0);
+        snack(err?.message || String(err), "err");
+      }finally{
+        processing = false;
+        updateKPIs();
+        renderOutputThumbs();
+      }
+    }
+
+    $("btnRun").addEventListener("click", runProcess);
+    $("btnRun2").addEventListener("click", runProcess);
+
+    // init
+    setMode("none");
+    updateKPIs();
+    setProgress(0);
+    setStatus("Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.", "info");
+  </script>
+</body>
+</html>
