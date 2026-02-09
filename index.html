@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="vi" data-theme="auto">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -9,8 +10,8 @@
 
   <!-- ===== NO-FLICKER THEME + LANG (MUST BE BEFORE CSS) ===== -->
   <script>
-    (function(){
-      try{
+    (function () {
+      try {
         const savedTheme = localStorage.getItem("theme") || "auto";
         document.documentElement.setAttribute("data-theme", savedTheme);
 
@@ -18,15 +19,16 @@
         document.documentElement.setAttribute("lang", savedLang);
 
         document.documentElement.classList.add("preload");
-        window.addEventListener("load", ()=> {
-          setTimeout(()=> document.documentElement.classList.remove("preload"), 30);
+        window.addEventListener("load", () => {
+          setTimeout(() => document.documentElement.classList.remove("preload"), 30);
         });
-      }catch(e){}
+      } catch (e) { }
     })();
   </script>
 
   <!-- 100% Material Icons -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,650,0,0" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,650,0,0" />
   <!-- Main CSS -->
   <link rel="stylesheet" href="./assets/css/style.css" />
 </head>
@@ -59,9 +61,7 @@
             <span id="langLabel">VI</span>
           </button>
 
-          <button class="btn mini" id="btnOpenSettings">
-            <span class="ms">settings</span> <span data-i18n="settings">Cài đặt</span>
-          </button>
+
           <button class="btn danger" id="btnClear" disabled>
             <span class="ms">delete_sweep</span> <span data-i18n="clear">Xoá</span>
           </button>
@@ -77,10 +77,12 @@
       <div class="card">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">cloud_upload</span> <span data-i18n="input_title">Ảnh gốc (Preview bên trên)</span></h2>
+            <h2><span class="ms">cloud_upload</span> <span data-i18n="input_title">Ảnh gốc (Preview bên trên)</span>
+            </h2>
             <div class="desc" data-i18n="input_desc">
               Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
-              <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và <code>./assets/watermark/watermark.png</code>
+              <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và
+              <code>./assets/watermark/watermark.png</code>
               (có thể chọn lại trong Cài đặt để override).
             </div>
           </div>
@@ -89,7 +91,8 @@
         <div class="cardBody" id="uploadCard">
           <div class="drop" id="dropzone">
             <p class="t"><span class="ms">upload</span> <span data-i18n="drop_title">Kéo thả ảnh vào đây</span></p>
-            <p class="d"><span class="ms xs">info</span><span data-i18n="drop_desc">Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).</span></p>
+            <p class="d"><span class="ms xs">info</span><span data-i18n="drop_desc">Chrome/Edge hỗ trợ chọn thư mục
+                (webkitdirectory).</span></p>
 
             <div class="row" style="margin-top:10px">
               <div>
@@ -113,7 +116,8 @@
 
             <div class="hint">
               <span class="ms sm">tips_and_updates</span>
-              <div data-i18n="hint_remove">Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview thumbnails).</div>
+              <div data-i18n="hint_remove">Nút <span class="ms xs">close</span> chỉ hiện khi ở chế độ ảnh lẻ (preview
+                thumbnails).</div>
             </div>
           </div>
 
@@ -121,8 +125,10 @@
 
           <div class="preTop">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b id="kpiCountIn">0</b></span>
-              <span class="badge"><span class="ms sm">folder_open</span> <span data-i18n="mode">Chế độ</span>: <b id="kpiModeIn">—</b></span>
+              <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b
+                  id="kpiCountIn">0</b></span>
+              <span class="badge"><span class="ms sm">folder_open</span> <span data-i18n="mode">Chế độ</span>: <b
+                  id="kpiModeIn">—</b></span>
             </div>
           </div>
 
@@ -138,328 +144,275 @@
         </div>
       </div>
 
-      <!-- Tips -->
+
+      <!-- Settings (Moved from Modal to Main Page) -->
       <div class="card">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">info</span> <span data-i18n="tips_title">Gợi ý nhanh</span></h2>
-            <div class="desc" data-i18n="tips_desc">Mở <b>Cài đặt</b> để đổi Logo/Watermark, format và thông số.</div>
-          </div>
-        </div>
-
-        <div class="cardBody">
-          <div class="tipsList">
-            <div class="tipItem">
-              <div class="tipIcon"><span class="ms">image</span></div>
-              <div class="tipText">
-                <p class="tipTitle" data-i18n="tip1_title">PNG nét • JPG nhẹ</p>
-                <p class="tipDesc" data-i18n="tip1_desc">PNG giữ chi tiết, JPG giảm dung lượng (Quality 1–12).</p>
-              </div>
-            </div>
-
-            <div class="tipItem">
-              <div class="tipIcon"><span class="ms">water_drop</span></div>
-              <div class="tipText">
-                <p class="tipTitle" data-i18n="tip2_title">Watermark tự co giãn</p>
-                <p class="tipDesc" data-i18n="tip2_desc">Luôn scale theo <b>OUT_SIZE</b>, không cần đúng 1080×1080.</p>
-              </div>
-            </div>
-
-            <div class="tipItem">
-              <div class="tipIcon"><span class="ms">folder_open</span></div>
-              <div class="tipText">
-                <p class="tipTitle" data-i18n="tip3_title">File mặc định</p>
-                <p class="tipDesc"><b>assets/logo/logo.png</b> • <b>assets/watermark/watermark.png</b></p>
-              </div>
-            </div>
-
-            <div class="tipItem">
-              <div class="tipIcon"><span class="ms">auto_fix_high</span></div>
-              <div class="tipText">
-                <p class="tipTitle" data-i18n="tip4_title">Quy trình chuẩn</p>
-                <p class="tipDesc" data-i18n="tip4_desc">Upload → (tuỳ chọn) Cài đặt → Xử lý → Tải lẻ / Tải chọn / ZIP.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Result -->
-    <div id="resultInner" style="margin-top:8px;">
-      <div class="card resultCard">
-        <div class="cardHead">
-          <div>
-            <h2><span class="ms">gallery_thumbnail</span> <span data-i18n="out_title">Kết quả (Preview bên dưới)</span></h2>
-            <div class="desc" data-i18n="out_desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.</div>
+            <h2><span class="ms">tune</span> <span data-i18n="settings">Cài đặt</span></h2>
+            <div class="desc" data-i18n="settings_desc">Tuỳ chỉnh thông số, giao diện và ngôn ngữ.</div>
           </div>
         </div>
         <div class="cardBody">
-          <div class="preTop">
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b id="kpiCountOut">0</b></span>
-              <span class="badge"><span class="ms sm">verified</span> <span data-i18n="ready">Sẵn sàng</span>: <b id="kpiReady">No</b></span>
+
+
+
+          <div class="section" style="margin-bottom:12px;">
+            <div
+              style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
+              <span class="ms">bolt</span> <span data-i18n="preset">Preset nhanh</span>
             </div>
-
-            <div class="actionRow">
-              <button class="btn mini" id="btnSelectAll" disabled>
-                <span class="ms">select_all</span> <span data-i18n="select_all">Chọn tất</span>
-              </button>
-              <button class="btn mini" id="btnUnselectAll" disabled>
-                <span class="ms">deselect</span> <span data-i18n="unselect_all">Bỏ chọn</span>
-              </button>
-              <button class="btn mini" id="btnDownloadSelected" disabled>
-                <span class="ms">download</span> <span data-i18n="download_selected">Tải đã chọn</span>
-              </button>
-              <button class="btn mini" id="btnDownloadAll" disabled>
-                <span class="ms">archive</span> <span data-i18n="download_zip">Tải tất cả (ZIP)</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="progress"><div class="bar" id="bar"></div></div>
-          <div class="mono" id="status"><span class="ms xs">info</span><span data-i18n="no_result">Chưa có kết quả. Bấm “Xử lý” để tạo ảnh.</span></div>
-
-          <div style="height:10px"></div>
-          <div class="thumbs" id="thumbsOut"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bottom bar (desktop only) -->
-  <div class="bottomBar">
-    <div class="small">
-      <span class="ms sm">info</span>
-      <span id="bottomHint" data-i18n="bottom_hint">
-        Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.
-      </span>
-    </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-      <button class="btn mini" id="btnOpenSettings2">
-        <span class="ms">settings</span> <span data-i18n="settings">Cài đặt</span>
-      </button>
-      <button class="btn danger" id="btnClear2" disabled>
-        <span class="ms">delete</span> <span data-i18n="clear">Xoá</span>
-      </button>
-      <button class="btn primary" id="btnRun2" disabled>
-        <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Mobile Dock -->
-  <div class="mobileDock">
-    <button class="dockBtn" id="dockUpload">
-      <span class="ms">upload</span>
-      <span class="dockLab" data-i18n="dock_upload">Upload</span>
-    </button>
-    <button class="dockBtn" id="dockSettings">
-      <span class="ms">settings</span>
-      <span class="dockLab" data-i18n="dock_settings">Cài đặt</span>
-    </button>
-    <button class="dockBtn" id="dockRun">
-      <span class="ms">play_arrow</span>
-      <span class="dockLab" data-i18n="dock_process">Xử lý</span>
-    </button>
-  </div>
-
-  <!-- Settings Popup (Modal) -->
-  <div class="modal" id="settingsModal" aria-hidden="true">
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="Cài đặt">
-      <div class="grabber"></div>
-      <div class="sheetHead">
-        <div class="ttl"><span class="ms">tune</span> <span data-i18n="settings">Cài đặt</span></div>
-        <button class="btn mini" id="btnCloseSettings" type="button"><span class="ms">close</span></button>
-      </div>
-
-      <div class="sheetBody">
-
-        <details class="section" open>
-          <summary>
-            <div class="sumLeft"><span class="ms">palette</span> <span data-i18n="ui_lang">Giao diện & Ngôn ngữ</span></div>
-            <span class="ms chev">expand_more</span>
-          </summary>
-          <div class="content">
-            <div style="margin-top:10px">
-              <label data-i18n="theme_mode">Chế độ giao diện</label>
+            <div style="padding:12px;">
               <div class="seg">
-                <button class="chip" type="button" data-theme-pick="auto"><span class="ms sm">brightness_auto</span> Auto</button>
-                <button class="chip" type="button" data-theme-pick="dark"><span class="ms sm">dark_mode</span> Dark</button>
-                <button class="chip" type="button" data-theme-pick="light"><span class="ms sm">light_mode</span> Light</button>
+                <button class="chip" type="button" id="preset1080"><span class="ms sm">auto_awesome</span> 1080 • Blur
+                  45</button>
+                <button class="chip" type="button" id="preset1350"><span class="ms sm">crop_square</span> 1350 • Blur
+                  55</button>
+                <button class="chip" type="button" id="presetSoft"><span class="ms sm">blur_on</span> <span
+                    data-i18n="blur_soft">Blur mềm</span></button>
+                <button class="chip" type="button" id="presetStrong"><span class="ms sm">blur_circular</span> <span
+                    data-i18n="blur_strong">Blur mạnh</span></button>
+              </div>
+            </div>
+          </div>
+
+          <details class="section" open>
+            <summary>
+              <div class="sumLeft"><span class="ms">image</span> <span data-i18n="wm_logo">Watermark & Logo</span></div>
+              <span class="ms chev">expand_more</span>
+            </summary>
+            <div class="content">
+              <!-- Toggle Watermark & Logo -->
+              <div class="row" style="margin-top:10px">
+                <div class="toggleRow">
+                  <label class="toggleLabel">
+                    <input type="checkbox" id="enableWatermark" checked />
+                    <span><span class="ms sm">water_drop</span> <span data-i18n="enable_wm">Chèn Watermark</span></span>
+                  </label>
+                </div>
+                <div class="toggleRow">
+                  <label class="toggleLabel">
+                    <input type="checkbox" id="enableLogo" checked />
+                    <span><span class="ms sm">add_photo_alternate</span> <span data-i18n="enable_logo">Chèn
+                        Logo</span></span>
+                  </label>
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label data-i18n="wm_file">Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)</label>
+                  <input id="inWM" class="field" type="file" accept="image/png" />
+                </div>
+                <div>
+                  <label data-i18n="logo_file">Logo PNG (mặc định: ./assets/logo/logo.png)</label>
+                  <input id="inLogo" class="field" type="file" accept="image/png" />
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>WM_OPACITY (%)</label>
+                  <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
+                </div>
+                <div>
+                  <label>LOGO_TARGET_W</label>
+                  <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>LOGO_MARGIN</label>
+                  <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
+                </div>
+                <div>
+                  <label>OUT_SIZE</label>
+                  <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
+                </div>
               </div>
               <div class="hint">
-                <span class="ms sm">bolt</span>
-                <div data-i18n="theme_hint">Lưu vào máy. Load lại không bị nháy giao diện.</div>
+                <span class="ms sm">tips_and_updates</span>
+                <div data-i18n="wm_scale_hint">Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).
+                </div>
               </div>
             </div>
+          </details>
 
-            <div style="margin-top:12px">
-              <label data-i18n="language">Ngôn ngữ</label>
-              <div class="seg">
-                <button class="chip" type="button" data-lang-pick="vi"><span class="ms sm">translate</span> VI</button>
-                <button class="chip" type="button" data-lang-pick="en"><span class="ms sm">translate</span> EN</button>
+          <details class="section">
+            <summary>
+              <div class="sumLeft"><span class="ms">photo_size_select_large</span> Output</div>
+              <span class="ms chev">expand_more</span>
+            </summary>
+            <div class="content">
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label data-i18n="out_format">Định dạng xuất</label>
+                  <select id="OUT_FORMAT" class="field">
+                    <option value="jpg" selected>JPG</option>
+                    <option value="png">PNG</option>
+                  </select>
+                </div>
+                <div>
+                  <label data-i18n="jpg_quality">JPG_QUALITY (1–12) — chỉ dùng khi JPG</label>
+                  <input id="JPG_QUALITY" class="field" type="number" value="10" min="1" max="12" step="1">
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label data-i18n="zip_name">Tên ZIP (tải tất cả)</label>
+                  <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
+                </div>
+                <div class="hint" style="margin:0;">
+                  <span class="ms sm">verified_user</span>
+                  <div data-i18n="format_hint">PNG nét hơn, JPG nhẹ hơn.</div>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="section" open>
+            <summary>
+              <div class="sumLeft"><span class="ms">blur_on</span> <span data-i18n="blur_bg">Blur nền</span></div>
+              <span class="ms chev">expand_more</span>
+            </summary>
+            <div class="content">
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>BG_BLUR</label>
+                  <input id="BG_BLUR" class="field" type="number" value="45" min="0" step="1">
+                </div>
+                <div>
+                  <label>BG_SCALE (%)</label>
+                  <input id="BG_SCALE" class="field" type="number" value="115" min="100" step="1">
+                </div>
+              </div>
+              <div class="hint">
+                <span class="ms sm">auto_fix_high</span>
+                <div data-i18n="blur_fix">Đã fix “viền mở rộng chưa blur”: nền blur được vẽ lớn hơn theo BG_BLUR nên
+                  không
+                  hở viền.</div>
+              </div>
+            </div>
+          </details>
+
+          <details class="section">
+            <summary>
+              <div class="sumLeft"><span class="ms">layers</span> <span data-i18n="glass_plate">Glass Plate sau
+                  logo</span></div>
+              <span class="ms chev">expand_more</span>
+            </summary>
+            <div class="content">
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>PLATE_PADDING</label>
+                  <input id="LOGO_PLATE_PADDING" class="field" type="number" value="14" min="0" step="1">
+                </div>
+                <div>
+                  <label>PLATE_BLUR</label>
+                  <input id="LOGO_PLATE_BLUR" class="field" type="number" value="18" min="0" step="1">
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>PLATE_OPACITY (%)</label>
+                  <input id="LOGO_PLATE_OPACITY" class="field" type="number" value="40" min="0" max="100" step="1">
+                </div>
+                <div>
+                  <label>PLATE_COLOR</label>
+                  <select id="LOGO_PLATE_COLOR" class="field">
+                    <option value="black" selected>black</option>
+                    <option value="white">white</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="resultInner">
+        <div class="card resultCard">
+          <div class="cardHead">
+            <div>
+              <h2><span class="ms">gallery_thumbnail</span> <span data-i18n="out_title">Kết quả (Preview bên
+                  dưới)</span>
+              </h2>
+              <div class="desc" data-i18n="out_desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.
               </div>
             </div>
           </div>
-        </details>
+          <div class="cardBody">
+            <div class="preTop">
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <span class="badge"><span class="ms sm">photo_library</span> <span data-i18n="count">Ảnh</span>: <b
+                    id="kpiCountOut">0</b></span>
+                <span class="badge"><span class="ms sm">verified</span> <span data-i18n="ready">Sẵn sàng</span>: <b
+                    id="kpiReady">No</b></span>
+              </div>
 
-        <div class="section" style="margin-bottom:12px;">
-          <div style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
-            <span class="ms">bolt</span> <span data-i18n="preset">Preset nhanh</span>
-          </div>
-          <div style="padding:12px;">
-            <div class="seg">
-              <button class="chip" type="button" id="preset1080"><span class="ms sm">auto_awesome</span> 1080 • Blur 45</button>
-              <button class="chip" type="button" id="preset1350"><span class="ms sm">crop_square</span> 1350 • Blur 55</button>
-              <button class="chip" type="button" id="presetSoft"><span class="ms sm">blur_on</span> <span data-i18n="blur_soft">Blur mềm</span></button>
-              <button class="chip" type="button" id="presetStrong"><span class="ms sm">blur_circular</span> <span data-i18n="blur_strong">Blur mạnh</span></button>
+              <div class="actionRow">
+                <button class="btn mini" id="btnSelectAll" disabled>
+                  <span class="ms">select_all</span> <span data-i18n="select_all">Chọn tất</span>
+                </button>
+                <button class="btn mini" id="btnUnselectAll" disabled>
+                  <span class="ms">deselect</span> <span data-i18n="unselect_all">Bỏ chọn</span>
+                </button>
+                <button class="btn mini" id="btnDownloadSelected" disabled>
+                  <span class="ms">download</span> <span data-i18n="download_selected">Tải đã chọn</span>
+                </button>
+                <button class="btn mini" id="btnDownloadAll" disabled>
+                  <span class="ms">archive</span> <span data-i18n="download_zip">Tải tất cả (ZIP)</span>
+                </button>
+              </div>
             </div>
+
+            <div class="progress">
+              <div class="bar" id="bar"></div>
+            </div>
+            <div class="mono" id="status"><span class="ms xs">info</span><span data-i18n="no_result">Chưa có kết quả.
+                Bấm
+                “Xử lý” để tạo ảnh.</span></div>
+
+            <div style="height:10px"></div>
+            <div class="thumbs" id="thumbsOut"></div>
           </div>
         </div>
-
-        <details class="section" open>
-          <summary>
-            <div class="sumLeft"><span class="ms">image</span> <span data-i18n="wm_logo">Watermark & Logo</span></div>
-            <span class="ms chev">expand_more</span>
-          </summary>
-          <div class="content">
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label data-i18n="wm_file">Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)</label>
-                <input id="inWM" class="field" type="file" accept="image/png" />
-              </div>
-              <div>
-                <label data-i18n="logo_file">Logo PNG (mặc định: ./assets/logo/logo.png)</label>
-                <input id="inLogo" class="field" type="file" accept="image/png" />
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label>WM_OPACITY (%)</label>
-                <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
-              </div>
-              <div>
-                <label>LOGO_TARGET_W</label>
-                <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label>LOGO_MARGIN</label>
-                <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
-              </div>
-              <div>
-                <label>OUT_SIZE</label>
-                <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
-              </div>
-            </div>
-            <div class="hint">
-              <span class="ms sm">tips_and_updates</span>
-              <div data-i18n="wm_scale_hint">Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).</div>
-            </div>
-          </div>
-        </details>
-
-        <details class="section">
-          <summary>
-            <div class="sumLeft"><span class="ms">photo_size_select_large</span> Output</div>
-            <span class="ms chev">expand_more</span>
-          </summary>
-          <div class="content">
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label data-i18n="out_format">Định dạng xuất</label>
-                <select id="OUT_FORMAT" class="field">
-                  <option value="jpg" selected>JPG</option>
-                  <option value="png">PNG</option>
-                </select>
-              </div>
-              <div>
-                <label data-i18n="jpg_quality">JPG_QUALITY (1–12) — chỉ dùng khi JPG</label>
-                <input id="JPG_QUALITY" class="field" type="number" value="10" min="1" max="12" step="1">
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label data-i18n="zip_name">Tên ZIP (tải tất cả)</label>
-                <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
-              </div>
-              <div class="hint" style="margin:0;">
-                <span class="ms sm">verified_user</span>
-                <div data-i18n="format_hint">PNG nét hơn, JPG nhẹ hơn.</div>
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <details class="section" open>
-          <summary>
-            <div class="sumLeft"><span class="ms">blur_on</span> <span data-i18n="blur_bg">Blur nền</span></div>
-            <span class="ms chev">expand_more</span>
-          </summary>
-          <div class="content">
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label>BG_BLUR</label>
-                <input id="BG_BLUR" class="field" type="number" value="45" min="0" step="1">
-              </div>
-              <div>
-                <label>BG_SCALE (%)</label>
-                <input id="BG_SCALE" class="field" type="number" value="115" min="100" step="1">
-              </div>
-            </div>
-            <div class="hint">
-              <span class="ms sm">auto_fix_high</span>
-              <div data-i18n="blur_fix">Đã fix “viền mở rộng chưa blur”: nền blur được vẽ lớn hơn theo BG_BLUR nên không hở viền.</div>
-            </div>
-          </div>
-        </details>
-
-        <details class="section">
-          <summary>
-            <div class="sumLeft"><span class="ms">layers</span> <span data-i18n="glass_plate">Glass Plate sau logo</span></div>
-            <span class="ms chev">expand_more</span>
-          </summary>
-          <div class="content">
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label>PLATE_PADDING</label>
-                <input id="LOGO_PLATE_PADDING" class="field" type="number" value="14" min="0" step="1">
-              </div>
-              <div>
-                <label>PLATE_BLUR</label>
-                <input id="LOGO_PLATE_BLUR" class="field" type="number" value="18" min="0" step="1">
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label>PLATE_OPACITY (%)</label>
-                <input id="LOGO_PLATE_OPACITY" class="field" type="number" value="40" min="0" max="100" step="1">
-              </div>
-              <div>
-                <label>PLATE_COLOR</label>
-                <select id="LOGO_PLATE_COLOR" class="field">
-                  <option value="black" selected>black</option>
-                  <option value="white">white</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <div class="stickyFooter">
-          <button class="btn primary" id="btnSaveClose" type="button" style="width:100%; justify-content:center;">
-            <span class="ms">done</span> <span data-i18n="save_close">Lưu & Đóng</span>
-          </button>
-          <div class="hint" style="margin-top:10px">
-            <span class="ms sm">keyboard</span>
-            <div data-i18n="esc_hint">Nhấn <b>ESC</b> để đóng. Chạm nền tối để đóng.</div>
-          </div>
-        </div>
-
       </div>
     </div>
+
+    <!-- Bottom bar (desktop only) -->
+    <div class="bottomBar">
+      <div class="small">
+        <span class="ms sm">info</span>
+        <span id="bottomHint" data-i18n="bottom_hint">
+          Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.
+        </span>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+
+        <button class="btn danger" id="btnClear2" disabled>
+          <span class="ms">delete</span> <span data-i18n="clear">Xoá</span>
+        </button>
+        <button class="btn primary" id="btnRun2" disabled>
+          <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dock -->
+    <div class="mobileDock">
+      <button class="dockBtn" id="dockUpload">
+        <span class="ms">upload</span>
+        <span class="dockLab" data-i18n="dock_upload">Upload</span>
+      </button>
+
+      <button class="dockBtn" id="dockRun">
+        <span class="ms">play_arrow</span>
+        <span class="dockLab" data-i18n="dock_process">Xử lý</span>
+      </button>
+    </div>
+
+
   </div>
 
   <!-- ✅ NEW: Confirm Folder Access (Professional modal before browser prompt) -->
@@ -467,20 +420,23 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-label="Xác nhận chọn thư mục">
       <div class="grabber"></div>
       <div class="sheetHead">
-        <div class="ttl"><span class="ms">shield</span> <span data-i18n="confirm_title">Xác nhận truy cập thư mục</span></div>
+        <div class="ttl"><span class="ms">shield</span> <span data-i18n="confirm_title">Xác nhận truy cập thư mục</span>
+        </div>
         <button class="btn mini" id="btnCloseConfirmFolder" type="button"><span class="ms">close</span></button>
       </div>
 
       <div class="sheetBody">
         <div class="section" style="margin-bottom:12px;">
-          <div style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
+          <div
+            style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
             <span class="ms">info</span> <span data-i18n="confirm_subtitle">Trình duyệt sẽ hỏi quyền đọc file</span>
           </div>
           <div style="padding:12px;">
             <div class="hint" style="margin-top:0;">
               <span class="ms sm">security</span>
               <div data-i18n="confirm_desc">
-                Khi bạn chọn thư mục, Chrome/Edge sẽ hiện hộp thoại bảo mật để xác nhận cho phép website đọc các ảnh trong thư mục đó.
+                Khi bạn chọn thư mục, Chrome/Edge sẽ hiện hộp thoại bảo mật để xác nhận cho phép website đọc các ảnh
+                trong thư mục đó.
                 Đây là cơ chế bắt buộc của trình duyệt và không thể thay thế/ẩn đi.
               </div>
             </div>
@@ -499,7 +455,8 @@
             <button class="btn" id="btnCancelConfirmFolder" type="button" style="flex:1; justify-content:center;">
               <span class="ms">close</span> <span data-i18n="confirm_cancel">Huỷ</span>
             </button>
-            <button class="btn primary" id="btnContinueConfirmFolder" type="button" style="flex:1; justify-content:center;">
+            <button class="btn primary" id="btnContinueConfirmFolder" type="button"
+              style="flex:1; justify-content:center;">
               <span class="ms">folder_open</span> <span data-i18n="confirm_continue">Tiếp tục</span>
             </button>
           </div>
@@ -512,9 +469,22 @@
     </div>
   </div>
 
+  <!-- Image Preview Modal (Lightbox) -->
+  <div class="modal" id="previewModal" aria-hidden="true">
+    <div class="previewOverlay" id="previewOverlay">
+      <button class="previewClose" id="btnClosePreview" type="button">
+        <span class="ms">close</span>
+      </button>
+      <img src="" alt="Preview" id="previewImg" class="previewImage" />
+      <div class="previewCaption" id="previewCaption"></div>
+    </div>
+  </div>
+
   <!-- JSZip (bắt buộc cho ZIP). FileSaver giữ lại nhưng đã có fallback Safari -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <!-- HEIC to JPG converter for iPhone photos -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
   <div class="snackbar" id="snack">
     <div class="msg" id="snackMsg"><span class="ms sm">info</span><span>…</span></div>
@@ -523,4 +493,5 @@
   <!-- Main JS -->
   <script src="./assets/js/main.js"></script>
 </body>
+
 </html>
