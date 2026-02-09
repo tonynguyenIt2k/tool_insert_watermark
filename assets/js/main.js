@@ -1013,7 +1013,8 @@ document.querySelectorAll("[data-lang-pick]").forEach(btn => {
 
 /* ===== Mobile dock ===== */
 $("dockUpload").addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // window.scrollTo({ top: 0, behavior: "smooth" }); // Old behavior
+    $("inPhotos").click(); // Trigger file upload
 });
 // Dock Settings removed as inline
 $("dockRun").addEventListener("click", () => { if (!$("btnRun").disabled) runBatch(); });
