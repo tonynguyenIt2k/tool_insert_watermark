@@ -6,6 +6,13 @@ const quality12ToCanvasQ = (q12) => clamp(q12 / 12, 0.08, 1);
 const isImage = (f) => /^image\//.test(f.type) || /\.heic$/i.test(f.name) || /\.heif$/i.test(f.name);
 const isHeic = (f) => /\.heic$/i.test(f.name) || /\.heif$/i.test(f.name) || f.type === 'image/heic' || f.type === 'image/heif';
 
+// State (Global)
+let mode = "none";
+let folderInfo = null;
+let items = [];
+let wmImg = null, logoImg = null;
+let processing = false;
+
 // Convert HEIC to JPG using heic2any library
 async function convertHeicToJpg(file) {
     if (!isHeic(file)) return file;
@@ -114,6 +121,7 @@ const I18N = {
         snack_converting_heic: "Đang chuyển đổi ảnh HEIC...",
         snack_heic_done: (n) => `Đã chuyển đổi ${n} ảnh HEIC sang JPG.`,
         preset_1080: "Đã áp dụng preset 1080.",
+        preset_2000: "Đã áp dụng preset 2000.",
         preset_1350: "Đã áp dụng preset 1350.",
         blur_softer: "Blur mềm hơn.",
         blur_stronger: "Blur mạnh hơn.",
@@ -215,6 +223,7 @@ const I18N = {
         snack_converting_heic: "Converting HEIC images...",
         snack_heic_done: (n) => `Converted ${n} HEIC images to JPG.`,
         preset_1080: "Preset 1080 applied.",
+        preset_2000: "Preset 2000 applied.",
         preset_1350: "Preset 1350 applied.",
         blur_softer: "Softer blur applied.",
         blur_stronger: "Stronger blur applied.",
@@ -369,14 +378,58 @@ async function fileToImageSource(file) {
 }
 
 async function urlToImageSource(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error("Không load được: " + url);
-    const blob = await res.blob();
-    return await decodeToCanvasImageSourceFromBlob(blob);
+    // Strategy 1: fetch (works on http/https)
+    try {
+        const res = await fetch(url);
+        if (res.ok) {
+            const blob = await res.blob();
+            return await decodeToCanvasImageSourceFromBlob(blob);
+        }
+    } catch (e) { /* fetch blocked on file:// */ }
+
+    // Strategy 2: XMLHttpRequest (works on file:// in most browsers)
+    try {
+        const blob = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            xhr.onload = () => {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    resolve(xhr.response);
+                } else {
+                    reject(new Error("XHR status " + xhr.status));
+                }
+            };
+            xhr.onerror = () => reject(new Error("XHR error"));
+            xhr.send();
+        });
+        return await decodeToCanvasImageSourceFromBlob(blob);
+    } catch (e) { /* XHR also blocked */ }
+
+    // Strategy 3: Load as <img>, re-encode via canvas to get clean blob
+    const img = new Image();
+    img.src = url;
+    await new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Không load được: " + url));
+    });
+
+    // Try to re-encode to avoid taint
+    try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+        if (blob) return await decodeToCanvasImageSourceFromBlob(blob);
+    } catch (e) { /* canvas tainted, fall through */ }
+
+    // Last resort: return img directly (may taint canvas)
+    return img;
 }
 
-const DEFAULT_WM_URL = "./assets/watermark/watermark.png";
-const DEFAULT_LOGO_URL = "./assets/logo/logo.png";
+const DEFAULT_WM_URL = (typeof DEFAULT_WM_B64 !== 'undefined') ? DEFAULT_WM_B64 : "./assets/watermark/watermark.png";
+const DEFAULT_LOGO_URL = (typeof DEFAULT_LOGO_B64 !== 'undefined') ? DEFAULT_LOGO_B64 : "./assets/logo/logo.png";
 
 function canvasToBlob(canvas, format, quality) {
     return new Promise((resolve, reject) => {
@@ -407,7 +460,10 @@ function renderOne({
     LOGO_TARGET_W, LOGO_MARGIN,
     LOGO_PLATE_PADDING, LOGO_PLATE_BLUR,
     LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
-    WM_OPACITY
+    LOGO_POSITION,
+    ENABLE_PLATE = true,
+    WM_OPACITY,
+    textConfig
 }) {
     const w = src.width, h = src.height;
     const size = Math.max(w, h);
@@ -419,20 +475,18 @@ function renderOne({
     sctx.fillStyle = "rgba(0,0,0,1)";
     sctx.fillRect(0, 0, size, size);
 
-    const pad = 0; // Removed extra padding to prevent Safari tiling artifacts
+    const pad = 0; // Removed extra padding
     const cover = Math.max(size / w, size / h) * (BG_SCALE / 100);
     const bw = w * cover, bh = h * cover;
     const bx = (size - bw) / 2, by = (size - bh) / 2;
 
     sctx.save();
     if (isSafari() && BG_BLUR > 0) {
-        // Safari fallback: Draw image first, then StackBlur the ImageData
         sctx.drawImage(src, bx, by, bw, bh);
         try {
             stackBlurCanvasRGB(sctx, 0, 0, size, size, BG_BLUR);
         } catch (e) { console.warn("Blur failed", e); }
     } else {
-        // Standard reliable filter for Chrome/Firefox
         sctx.filter = `blur(${BG_BLUR}px)`;
         sctx.drawImage(src, bx, by, bw, bh);
     }
@@ -454,27 +508,86 @@ function renderOne({
         octx.restore();
     }
 
+    if (textConfig && textConfig.enabled && textConfig.text) {
+        octx.save();
+        octx.globalAlpha = textConfig.opacity / 100;
+        octx.fillStyle = textConfig.color === "white" ? "white" : textConfig.color === "red" ? "red" : textConfig.color === "blue" ? "blue" : "black";
+        octx.font = `bold ${textConfig.size}px sans-serif`;
+        octx.textBaseline = "middle";
+
+        const txt = textConfig.text + "   "; // space between repeats
+        const tw = octx.measureText(txt).width;
+        if (tw > 0) {
+            const cols = Math.ceil(OUT_SIZE / tw) + 1;
+            const rows = textConfig.repeats;
+            const RowH = textConfig.size * 1.5;
+
+            // Draw at bottom
+            const startY = OUT_SIZE - (rows * RowH) + (RowH / 2) - (RowH * 0.2);
+
+            for (let r = 0; r < rows; r++) {
+                const y = startY + (r * RowH);
+                // Alternate offset quite simply
+                const offset = r % 2 === 0 ? 0 : -(tw / 2);
+
+                for (let c = 0; c < cols; c++) {
+                    octx.fillText(txt, offset + (c * tw), y);
+                }
+            }
+        }
+        octx.restore();
+    }
+
     if (logo) {
         const scale = LOGO_TARGET_W / logo.width;
         const lw = logo.width * scale;
         const lh = logo.height * scale;
-        const lx = LOGO_MARGIN;
-        const ly = LOGO_MARGIN;
 
-        const pad2 = LOGO_PLATE_PADDING;
-        const pl = clamp(lx - pad2, 0, OUT_SIZE);
-        const pt = clamp(ly - pad2, 0, OUT_SIZE);
-        const pr = clamp(lx + lw + pad2, 0, OUT_SIZE);
-        const pb = clamp(ly + lh + pad2, 0, OUT_SIZE);
-        const pw = pr - pl, ph = pb - pt;
+        let lx = LOGO_MARGIN;
+        let ly = LOGO_MARGIN;
 
-        octx.save();
-        octx.globalAlpha = clamp(LOGO_PLATE_OPACITY, 0, 100) / 100;
-        octx.filter = `blur(${LOGO_PLATE_BLUR}px)`;
-        octx.fillStyle = (LOGO_PLATE_COLOR === "white") ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
-        roundRect(octx, pl, pt, pw, ph, 18);
-        octx.fill();
-        octx.restore();
+        // Position Logic
+        const pos = LOGO_POSITION || "TL";
+        if (pos === "custom") { // Custom logic
+            if (logo.customX !== undefined && logo.customY !== undefined) {
+                lx = logo.customX * OUT_SIZE;
+                ly = logo.customY * OUT_SIZE;
+            } else {
+                // Fallback if not set
+                lx = (OUT_SIZE - lw) / 2;
+                ly = (OUT_SIZE - lh) / 2;
+            }
+        } else if (pos === "TR") {
+            lx = OUT_SIZE - lw - LOGO_MARGIN;
+            ly = LOGO_MARGIN;
+        } else if (pos === "BL") {
+            lx = LOGO_MARGIN;
+            ly = OUT_SIZE - lh - LOGO_MARGIN;
+        } else if (pos === "BR") {
+            lx = OUT_SIZE - lw - LOGO_MARGIN;
+            ly = OUT_SIZE - lh - LOGO_MARGIN;
+        } else if (pos === "center") {
+            lx = (OUT_SIZE - lw) / 2;
+            ly = (OUT_SIZE - lh) / 2;
+        }
+
+        // Glass Plate (only if enabled)
+        if (ENABLE_PLATE) {
+            const pad2 = LOGO_PLATE_PADDING;
+            const pl = clamp(lx - pad2, 0, OUT_SIZE);
+            const pt = clamp(ly - pad2, 0, OUT_SIZE);
+            const pr = clamp(lx + lw + pad2, 0, OUT_SIZE);
+            const pb = clamp(ly + lh + pad2, 0, OUT_SIZE);
+            const pw = pr - pl, ph = pb - pt;
+
+            octx.save();
+            octx.globalAlpha = clamp(LOGO_PLATE_OPACITY, 0, 100) / 100;
+            octx.filter = `blur(${LOGO_PLATE_BLUR}px)`;
+            octx.fillStyle = (LOGO_PLATE_COLOR === "white") ? "rgba(255,255,255,1)" : "rgba(0,0,0,1)";
+            roundRect(octx, pl, pt, pw, ph, 18);
+            octx.fill();
+            octx.restore();
+        }
 
         octx.drawImage(logo, lx, ly, lw, lh);
     }
@@ -482,12 +595,318 @@ function renderOne({
     return out;
 }
 
+/* ===== Interactive Preview State ===== */
+let isDraggingLogo = false;
+let isResizingLogo = false;
+let dragStartX, dragStartY;
+let initialLogoLeft, initialLogoTop;
+let initialLogoW, initialLogoH;
+let previewScale = 1; // ratio of preview image width / actual OUT_SIZE
+
+function isPreviewOpen() {
+    return $("previewModal").classList.contains("show");
+}
+
+async function openInteractivePreview() {
+    if (!items.length) {
+        snack((I18N[getLang()] || I18N.vi).no_input || "Chưa chọn ảnh nào", "warn");
+        return;
+    }
+
+    // Load assets first (logo/watermark) if not already loaded
+    await loadAssets();
+
+    // Get first item
+    const it = items[0];
+    const src = await fileToImageSource(it.file);
+
+    // Load config
+    const OUT_SIZE = +$("OUT_SIZE").value || 2000;
+    const BG_BLUR = +$("BG_BLUR").value || 45;
+    const BG_SCALE = +$("BG_SCALE").value || 115;
+    const WM_OPACITY = clamp(+$("WM_OPACITY").value || 100, 0, 100);
+    const LOGO_TARGET_W = +$("LOGO_TARGET_W").value || 160;
+    const LOGO_MARGIN = +$("LOGO_MARGIN").value || 28;
+    const LOGO_PLATE_PADDING = +$("LOGO_PLATE_PADDING").value || 14;
+    const LOGO_PLATE_BLUR = clamp(+$("LOGO_PLATE_BLUR").value || 18, 0, 120);
+    const LOGO_PLATE_OPACITY = clamp(+$("LOGO_PLATE_OPACITY").value || 40, 0, 100);
+    const LOGO_PLATE_COLOR = $("LOGO_PLATE_COLOR").value || "black";
+    let LOGO_POSITION = $("LOGO_POSITION").value || "TL";
+
+    const enableTextWM = $("enableTextWM").checked;
+    const textConfig = {
+        enabled: enableTextWM,
+        text: $("wmText").value || "",
+        size: clamp(+$("wmTextSize").value || 60, 10, 500),
+        opacity: clamp(+$("wmTextOpacity").value || 30, 0, 100),
+        color: $("wmTextColor").value || "black",
+        repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10)
+    };
+
+    // 1. Render Background (No Logo)
+    const bgCanvas = renderOne({
+        src, wm: wmImg, logo: null, // No logo here
+        OUT_SIZE, BG_BLUR, BG_SCALE,
+        LOGO_TARGET_W, LOGO_MARGIN, LOGO_PLATE_PADDING, LOGO_PLATE_BLUR, LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
+        ENABLE_PLATE: $("enablePlate").checked,
+        WM_OPACITY, textConfig
+    });
+
+    // 2. Setup Preview Modal
+    const modal = $("previewModal");
+    const imgParam = $("previewImg"); // Background img
+    const logoDiv = $("previewLogo");
+    const logoImgEl = $("previewLogoImg");
+
+    modal.classList.add("show");
+    $("previewCaption").textContent = "Preview: " + it.name + " (Kéo logo để chỉnh vị trí)";
+
+    // Set background
+    const format = $("OUT_FORMAT").value || "jpg";
+    const mime = format === "png" ? "image/png" : "image/jpeg";
+    const quality = +$("JPG_QUALITY").value || 0.92;
+    imgParam.src = bgCanvas.toDataURL(mime, quality);
+
+    // 3. Setup Logo Overlay
+    if (logoImg && $("enableLogo").checked) {
+        logoDiv.style.display = "block";
+
+        // Get logo URL directly (logoImg may be ImageBitmap without .src)
+        const logoFile = $("inLogo").files[0];
+        if (logoFile) {
+            logoImgEl.src = URL.createObjectURL(logoFile);
+        } else {
+            logoImgEl.src = DEFAULT_LOGO_URL;
+        }
+
+        // Wait for image to load to measure dims? No, logoImg is already loaded or we wait.
+
+        // Calculate logical position
+        const logoAspect = logoImg.width / logoImg.height;
+        const curLogoW = LOGO_TARGET_W; // in output pixels
+        const curLogoH = curLogoW / logoAspect;
+
+        let lx, ly;
+        // Logic to determine lx/ly based on LOGO_POSITION
+        if (LOGO_POSITION === "custom") {
+            const cx = +$("LOGO_X").value || 0;
+            const cy = +$("LOGO_Y").value || 0;
+            lx = cx * OUT_SIZE;
+            ly = cy * OUT_SIZE;
+        } else if (LOGO_POSITION === "TR") {
+            lx = OUT_SIZE - curLogoW - LOGO_MARGIN; ly = LOGO_MARGIN;
+        } else if (LOGO_POSITION === "BL") {
+            lx = LOGO_MARGIN; ly = OUT_SIZE - curLogoH - LOGO_MARGIN;
+        } else if (LOGO_POSITION === "BR") {
+            lx = OUT_SIZE - curLogoW - LOGO_MARGIN; ly = OUT_SIZE - curLogoH - LOGO_MARGIN;
+        } else if (LOGO_POSITION === "center") {
+            lx = (OUT_SIZE - curLogoW) / 2; ly = (OUT_SIZE - curLogoH) / 2;
+        } else { // TL
+            lx = LOGO_MARGIN; ly = LOGO_MARGIN;
+        }
+
+        // We need to map OUT_SIZE pixels to PREVIEW pixels.
+        // The preview image acts as container.
+
+        // Wait for preview image render to know natural/displayed sizes?
+        // Actually, we can just use percentages for display!
+        // left: (lx / OUT_SIZE) * 100 %
+
+        logoDiv.style.left = (lx / OUT_SIZE * 100) + "%";
+        logoDiv.style.top = (ly / OUT_SIZE * 100) + "%";
+        logoDiv.style.width = (curLogoW / OUT_SIZE * 100) + "%";
+        logoDiv.style.height = "auto"; // aspect ratio preserved by img
+
+        // Store current logical state for custom calc
+        logoDiv.dataset.lx = lx;
+        logoDiv.dataset.ly = ly;
+        logoDiv.dataset.w = curLogoW;
+
+    } else {
+        logoDiv.style.display = "none";
+    }
+}
+
+// DRAG & RESIZE EVENTS
+const pLogo = $("previewLogo");
+const pContainer = $("previewContainer");
+
+// Mouse Down (Drag Start)
+pLogo.addEventListener("mousedown", startDrag);
+pLogo.addEventListener("touchstart", startDrag, { passive: false });
+
+function startDrag(e) {
+    if (e.target.classList.contains("resizeHandle")) return; // Defer to resize
+    e.preventDefault();
+    isDraggingLogo = true;
+
+    // Switch to custom mode immediately
+    $("LOGO_POSITION").value = "custom";
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    dragStartX = clientX;
+    dragStartY = clientY;
+
+    // Current % positions
+    initialLogoLeft = parseFloat(pLogo.style.left);
+    initialLogoTop = parseFloat(pLogo.style.top);
+
+    pLogo.classList.add("dragging");
+    document.addEventListener("mousemove", onDrag);
+    document.addEventListener("touchmove", onDrag, { passive: false });
+    document.addEventListener("mouseup", endDrag);
+    document.addEventListener("touchend", endDrag);
+}
+
+function onDrag(e) {
+    if (!isDraggingLogo) return;
+    e.preventDefault();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - dragStartX;
+    const dy = clientY - dragStartY;
+
+    // Convert px delta to % delta relative to container width/height
+    const cw = pContainer.clientWidth;
+    const ch = pContainer.clientHeight;
+
+    const dxPct = (dx / cw) * 100;
+    const dyPct = (dy / ch) * 100;
+
+    pLogo.style.left = (initialLogoLeft + dxPct) + "%";
+    pLogo.style.top = (initialLogoTop + dyPct) + "%";
+}
+
+function endDrag() {
+    if (!isDraggingLogo) return;
+    isDraggingLogo = false;
+    pLogo.classList.remove("dragging");
+
+    document.removeEventListener("mousemove", onDrag);
+    document.removeEventListener("touchmove", onDrag);
+    document.removeEventListener("mouseup", endDrag);
+    document.removeEventListener("touchend", endDrag);
+
+    // Save new position
+    const leftPct = parseFloat(pLogo.style.left) / 100;
+    const topPct = parseFloat(pLogo.style.top) / 100;
+
+    $("LOGO_X").value = leftPct;
+    $("LOGO_Y").value = topPct;
+
+    // Trigger update
+    // We don't re-render preview because we just moved it visually.
+    // But we should reset thumbnails.
+    resetOutputs();
+    renderOutputThumbs();
+}
+
+// Resize Logic
+const pHandle = pLogo.querySelector(".resizeHandle");
+pHandle.addEventListener("mousedown", startResize);
+pHandle.addEventListener("touchstart", startResize, { passive: false });
+
+function startResize(e) {
+    e.stopPropagation(); // prevent drag
+    e.preventDefault();
+    isResizingLogo = true;
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    dragStartX = clientX;
+
+    // Current width %
+    initialLogoW = parseFloat(pLogo.style.width);
+
+    pLogo.classList.add("dragging");
+    document.addEventListener("mousemove", onResize);
+    document.addEventListener("touchmove", onResize, { passive: false });
+    document.addEventListener("mouseup", endResize);
+    document.addEventListener("touchend", endResize);
+}
+
+function onResize(e) {
+    if (!isResizingLogo) return;
+    e.preventDefault();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const dx = clientX - dragStartX;
+
+    // Convert px delta to % delta
+    const cw = pContainer.clientWidth;
+    const dxPct = (dx / cw) * 100;
+
+    // New width
+    const newW = Math.max(5, initialLogoW + dxPct); // min 5%
+    pLogo.style.width = newW + "%";
+}
+
+function endResize() {
+    if (!isResizingLogo) return;
+    isResizingLogo = false;
+    pLogo.classList.remove("dragging");
+
+    document.removeEventListener("mousemove", onResize);
+    document.removeEventListener("touchmove", onResize);
+    document.removeEventListener("mouseup", endResize);
+    document.removeEventListener("touchend", endResize);
+
+    // Save new width
+    const widthPct = parseFloat(pLogo.style.width) / 100;
+    const OUT_SIZE = +$("OUT_SIZE").value || 2000;
+
+    const newTargetW = Math.round(widthPct * OUT_SIZE);
+    $("LOGO_TARGET_W").value = newTargetW;
+
+    resetOutputs();
+    renderOutputThumbs();
+}
+
+
+/* ===== LIVE PREVIEW (Legacy - override with Interactive) ===== */
+async function previewFirstItem() {
+    openInteractivePreview();
+}
+
+// Hook reset logic.. actually we don't need to re-render preview on drag/resize because 
+// we are doing it manually. 
+// BUT if user changes INPUTS, we do.
+
+function updateInteractivePreview() {
+    if (!isPreviewOpen()) return;
+    // Debounce?
+    openInteractivePreview();
+}
+
+// Button Click listener moved to init()
+
+
+// Hook into existing listeners for auto-update
+const configIdsForPreview = [
+    "inWM", "inLogo", "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE",
+    "WM_OPACITY", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
+    "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR",
+    "enableWatermark", "enableLogo", "enablePlate",
+    "LOGO_POSITION",
+    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats"
+];
+
+configIdsForPreview.forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("change", updateInteractivePreview);
+    if (el.tagName === "INPUT" && (el.type === "text" || el.type === "number")) {
+        el.addEventListener("input", updateInteractivePreview);
+    }
+});
+
+
 // State
-let mode = "none";
-let folderInfo = null;
-let items = [];
-let wmImg = null, logoImg = null;
-let processing = false;
+// State definitions moved to top
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const isSameFile = (a, b) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
@@ -502,11 +921,11 @@ function setMode(m) {
 
 function ready() {
     const ok = items.length && !processing;
-    $("btnRun").disabled = !ok;
+    // $("btnRun").disabled = !ok;
     $("btnRun2").disabled = !ok;
 
     const canClear = (items.length || $("inWM").files[0] || $("inLogo").files[0]) && !processing;
-    $("btnClear").disabled = !canClear;
+    // $("btnClear").disabled = !canClear;
     $("btnClear2").disabled = !canClear;
 
     $("kpiReady").textContent = ok ? "Yes" : "No";
@@ -842,7 +1261,28 @@ $("inFolder").addEventListener("change", (e) => {
 });
 
 // config change => invalidate outputs
-["inWM", "inLogo", "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE", "WM_OPACITY", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING", "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR", "enableWatermark", "enableLogo"].forEach((id) => {
+// Toggle Text Watermark Settings
+$("enableTextWM").addEventListener("change", () => {
+    const on = $("enableTextWM").checked;
+    const settings = $("textWmSettings");
+    if (settings) settings.style.display = on ? "block" : "none";
+
+    resetOutputs();
+    renderOutputThumbs();
+    updateKPIs();
+});
+
+// config change => invalidate outputs
+const configIds = [
+    "inWM", "inLogo", "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE",
+    "WM_OPACITY", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
+    "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR",
+    "enableWatermark", "enableLogo", "enablePlate",
+    "LOGO_POSITION",
+    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats"
+];
+
+configIds.forEach((id) => {
     const el = $(id);
     if (!el) return;
     el.addEventListener("change", () => {
@@ -865,7 +1305,7 @@ dz.addEventListener("drop", (e) => {
 });
 
 // Clear
-$("btnClear").addEventListener("click", clearAll);
+// $("btnClear").addEventListener("click", clearAll);
 $("btnClear2").addEventListener("click", clearAll);
 
 // Batch select
@@ -910,6 +1350,8 @@ const previewCaption = $("previewCaption");
 function openPreview(imgSrc, caption) {
     previewImg.src = imgSrc;
     previewCaption.textContent = caption || "";
+    // Hide interactive logo overlay (it's only for interactive preview, not result lightbox)
+    $("previewLogo").style.display = "none";
     previewModal.classList.add("show");
     previewModal.setAttribute("aria-hidden", "false");
     document.documentElement.style.overflow = "hidden";
@@ -970,6 +1412,16 @@ $("preset1080").addEventListener("click", () => {
     snack(t("preset_1080"), "ok");
     resetOutputs(); renderOutputThumbs(); updateKPIs();
 });
+$("preset2000").addEventListener("click", () => {
+    $("OUT_SIZE").value = 2000;
+    $("BG_BLUR").value = 45;
+    $("BG_SCALE").value = 115;
+    $("LOGO_TARGET_W").value = 300;
+    $("LOGO_MARGIN").value = 50;
+    $("zipName").value = "output_2000_logo_wm.zip";
+    snack(t("preset_2000"), "ok");
+    resetOutputs(); renderOutputThumbs(); updateKPIs();
+});
 $("preset1350").addEventListener("click", () => {
     $("OUT_SIZE").value = 1350;
     $("BG_BLUR").value = 55;
@@ -1017,7 +1469,7 @@ $("dockUpload").addEventListener("click", () => {
     $("inPhotos").click(); // Trigger file upload
 });
 // Dock Settings removed as inline
-$("dockRun").addEventListener("click", () => { if (!$("btnRun").disabled) runBatch(); });
+$("dockRun").addEventListener("click", () => { if (!$("btnRun2").disabled) runBatch(); });
 
 /* ===== Main PROCESS ===== */
 async function runBatch() {
@@ -1039,7 +1491,7 @@ async function runBatch() {
 
         const OUT_FORMAT = $("OUT_FORMAT").value;
         const JPG_QUALITY = clamp(+$("JPG_QUALITY").value || 10, 1, 12);
-        const OUT_SIZE = clamp(+$("OUT_SIZE").value || 1080, 256, 6000);
+        const OUT_SIZE = clamp(+$("OUT_SIZE").value || 2000, 256, 6000);
         const BG_BLUR = clamp(+$("BG_BLUR").value || 45, 0, 200);
         const BG_SCALE = clamp(+$("BG_SCALE").value || 115, 100, 250);
 
@@ -1051,6 +1503,20 @@ async function runBatch() {
         const LOGO_PLATE_BLUR = clamp(+$("LOGO_PLATE_BLUR").value || 18, 0, 120);
         const LOGO_PLATE_OPACITY = clamp(+$("LOGO_PLATE_OPACITY").value || 40, 0, 100);
         const LOGO_PLATE_COLOR = $("LOGO_PLATE_COLOR").value || "black";
+
+        // New Inputs
+        const LOGO_POSITION = $("LOGO_POSITION").value || "TL";
+        const ENABLE_PLATE = $("enablePlate").checked;
+
+        const enableTextWM = $("enableTextWM").checked;
+        const textConfig = {
+            enabled: enableTextWM,
+            text: $("wmText").value || "",
+            size: clamp(+$("wmTextSize").value || 60, 10, 500),
+            opacity: clamp(+$("wmTextOpacity").value || 30, 0, 100),
+            color: $("wmTextColor").value || "black",
+            repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10)
+        };
 
         for (let i = 0; i < items.length; i++) {
             const it = items[i];
@@ -1065,7 +1531,10 @@ async function runBatch() {
                 LOGO_TARGET_W, LOGO_MARGIN,
                 LOGO_PLATE_PADDING, LOGO_PLATE_BLUR,
                 LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
-                WM_OPACITY
+                LOGO_POSITION,
+                ENABLE_PLATE,
+                WM_OPACITY,
+                textConfig
             });
 
             try {
@@ -1108,8 +1577,11 @@ async function runBatch() {
     }
 }
 
-$("btnRun").addEventListener("click", runBatch);
+// $("btnRun").addEventListener("click", runBatch);
 $("btnRun2").addEventListener("click", runBatch);
+
+/* ===== Legacy Preview Function Removed (Moved to OpenInteractivePreview above) ===== */
+
 
 /* ===== Download ALL (ZIP) ===== */
 $("btnDownloadAll").addEventListener("click", async () => {
@@ -1139,7 +1611,7 @@ $("btnDownloadAll").addEventListener("click", async () => {
 /* ===== Keyboard shortcuts (nice) ===== */
 document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        if (!$("btnRun").disabled) runBatch();
+        if (!$("btnRun2").disabled) runBatch();
     }
 });
 
@@ -1153,6 +1625,18 @@ document.addEventListener("keydown", (e) => {
     updateKPIs();
     setStatus(t("no_result"), "info");
     setProgress(0);
+
+    // Attach Live Preview Listener
+    const btnPrev = $("btnLivePreview");
+    if (btnPrev) {
+        console.log("Attaching Live Preview listener");
+        btnPrev.addEventListener("click", () => {
+            console.log("Live Preview Clicked");
+            previewFirstItem();
+        });
+    } else {
+        console.error("btnLivePreview not found in init");
+    }
 })();
 
 /* ============== StackBlur Algorithm (Fast Gaussian Blur) for Safari ============== */

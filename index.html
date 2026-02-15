@@ -60,14 +60,6 @@
             <span class="ms">translate</span>
             <span id="langLabel">VI</span>
           </button>
-
-
-          <button class="btn danger" id="btnClear" disabled>
-            <span class="ms">delete_sweep</span> <span data-i18n="clear">Xoá</span>
-          </button>
-          <button class="btn primary" id="btnRun" disabled>
-            <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
-          </button>
         </div>
       </div>
     </div>
@@ -152,6 +144,11 @@
             <h2><span class="ms">tune</span> <span data-i18n="settings">Cài đặt</span></h2>
             <div class="desc" data-i18n="settings_desc">Tuỳ chỉnh thông số, giao diện và ngôn ngữ.</div>
           </div>
+          <!-- Live Preview Button -->
+          <button class="btn mini primary" id="btnLivePreview" title="Xem trước ảnh đầu tiên">
+            <span class="ms">visibility</span>
+            <span>Xem thử</span>
+          </button>
         </div>
         <div class="cardBody">
 
@@ -165,6 +162,8 @@
             <div style="padding:12px;">
               <div class="seg">
                 <button class="chip" type="button" id="preset1080"><span class="ms sm">auto_awesome</span> 1080 • Blur
+                  45</button>
+                <button class="chip" type="button" id="preset2000"><span class="ms sm">high_quality</span> 2000 • Blur
                   45</button>
                 <button class="chip" type="button" id="preset1350"><span class="ms sm">crop_square</span> 1350 • Blur
                   55</button>
@@ -187,7 +186,8 @@
                 <div class="toggleRow">
                   <label class="toggleLabel">
                     <input type="checkbox" id="enableWatermark" checked />
-                    <span><span class="ms sm">water_drop</span> <span data-i18n="enable_wm">Chèn Watermark</span></span>
+                    <span><span class="ms sm">water_drop</span> <span data-i18n="enable_wm">Chèn Watermark
+                        (Ảnh)</span></span>
                   </label>
                 </div>
                 <div class="toggleRow">
@@ -198,6 +198,54 @@
                   </label>
                 </div>
               </div>
+
+              <!-- NEW: Text Watermark Toggle -->
+              <div class="row" style="margin-top:10px">
+                <div class="toggleRow">
+                  <label class="toggleLabel">
+                    <input type="checkbox" id="enableTextWM" />
+                    <span><span class="ms sm">text_fields</span> <span data-i18n="enable_text_wm">Chèn Watermark
+                        (Chữ)</span></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Text Watermark Settings -->
+              <div id="textWmSettings"
+                style="display:none; border:1px solid var(--line); padding:10px; border-radius:12px; margin-top:10px; background:rgba(0,0,0,0.1);">
+                <div class="row">
+                  <div>
+                    <label>Nội dung chữ</label>
+                    <input id="wmText" class="field" type="text" placeholder="Nhập số điện thoại..."
+                      value="0912 345 678">
+                  </div>
+                  <div>
+                    <label>Cỡ chữ (px)</label>
+                    <input id="wmTextSize" class="field" type="number" value="60" step="1">
+                  </div>
+                </div>
+                <div class="row" style="margin-top:10px">
+                  <div>
+                    <label>Độ mờ (%)</label>
+                    <input id="wmTextOpacity" class="field" type="number" value="30" min="0" max="100">
+                  </div>
+                  <div>
+                    <label>Máu chữ</label>
+                    <select id="wmTextColor" class="field">
+                      <option value="black" selected>Đen</option>
+                      <option value="white">Trắng</option>
+                      <option value="red">Đỏ</option>
+                      <option value="blue">Xanh</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Số dòng lặp</label>
+                    <input id="wmTextRepeats" class="field" type="number" value="3" min="1" max="10">
+                  </div>
+                </div>
+              </div>
+
+
               <div class="row" style="margin-top:10px">
                 <div>
                   <label data-i18n="wm_file">Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)</label>
@@ -223,11 +271,25 @@
                   <label>LOGO_MARGIN</label>
                   <input id="LOGO_MARGIN" class="field" type="number" value="28" min="0" step="1">
                 </div>
+                <!-- NEW: Logo Position -->
+                <div>
+                  <label>Vị trí Logo</label>
+                  <select id="LOGO_POSITION" class="field">
+                    <option value="TL" selected>Góc Trái Trên</option>
+                    <option value="TR">Góc Phải Trên</option>
+                    <option value="BL">Góc Trái Dưới</option>
+                    <option value="BR">Góc Phải Dưới</option>
+                    <option value="center">Chính Giữa</option>
+                  </select>
+                </div>
                 <div>
                   <label>OUT_SIZE</label>
-                  <input id="OUT_SIZE" class="field" type="number" value="1080" min="256" step="1">
+                  <input id="OUT_SIZE" class="field" type="number" value="2000" min="256" step="1">
                 </div>
               </div>
+              <!-- Hidden inputs for custom logo position -->
+              <input type="hidden" id="LOGO_X" value="0">
+              <input type="hidden" id="LOGO_Y" value="0">
               <div class="hint">
                 <span class="ms sm">tips_and_updates</span>
                 <div data-i18n="wm_scale_hint">Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).
@@ -246,8 +308,8 @@
                 <div>
                   <label data-i18n="out_format">Định dạng xuất</label>
                   <select id="OUT_FORMAT" class="field">
-                    <option value="jpg" selected>JPG</option>
-                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png" selected>PNG</option>
                   </select>
                 </div>
                 <div>
@@ -258,7 +320,7 @@
               <div class="row" style="margin-top:10px">
                 <div>
                   <label data-i18n="zip_name">Tên ZIP (tải tất cả)</label>
-                  <input id="zipName" class="field" type="text" value="output_1080_logo_wm.zip" />
+                  <input id="zipName" class="field" type="text" value="output_2000_logo_wm.zip" />
                 </div>
                 <div class="hint" style="margin:0;">
                   <span class="ms sm">verified_user</span>
@@ -297,6 +359,10 @@
             <summary>
               <div class="sumLeft"><span class="ms">layers</span> <span data-i18n="glass_plate">Glass Plate sau
                   logo</span></div>
+              <label class="toggleLabel" onclick="event.stopPropagation()" style="margin-left:auto; margin-right:8px;">
+                <input type="checkbox" id="enablePlate" checked>
+                <span style="font-size:13px" data-i18n="on_off">Bật</span>
+              </label>
               <span class="ms chev">expand_more</span>
             </summary>
             <div class="content">
@@ -379,38 +445,41 @@
         </div>
       </div>
     </div>
+    <!-- Spacer to prevent bottom bar from covering content -->
+    <div style="height: 80px;" aria-hidden="true"></div>
+  </div>
 
-    <!-- Bottom bar (desktop only) -->
-    <div class="bottomBar">
-      <div class="small">
-        <span class="ms sm">info</span>
-        <span id="bottomHint" data-i18n="bottom_hint">
-          Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.
-        </span>
-      </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-
-        <button class="btn danger" id="btnClear2" disabled>
-          <span class="ms">delete</span> <span data-i18n="clear">Xoá</span>
-        </button>
-        <button class="btn primary" id="btnRun2" disabled>
-          <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
-        </button>
-      </div>
+  <!-- Bottom bar (desktop only) -->
+  <div class="bottomBar">
+    <div class="small">
+      <span class="ms sm">info</span>
+      <span id="bottomHint" data-i18n="bottom_hint">
+        Chọn ảnh → (tùy chọn) mở Cài đặt chọn watermark/logo → bấm Xử lý. Nếu không chọn sẽ dùng mặc định assets.
+      </span>
     </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
 
-    <!-- Mobile Dock -->
-    <div class="mobileDock">
-      <button class="dockBtn" id="dockUpload">
-        <span class="ms">add_photo_alternate</span>
-        <span class="dockLab" data-i18n="dock_upload">Upload</span>
+      <button class="btn danger" id="btnClear2" disabled>
+        <span class="ms">delete</span> <span data-i18n="clear">Xoá</span>
       </button>
-
-      <button class="dockBtn primary" id="dockRun">
-        <span class="ms">auto_fix_high</span>
-        <span class="dockLab" data-i18n="dock_process">Xử lý</span>
+      <button class="btn primary" id="btnRun2" disabled>
+        <span class="ms">auto_fix_high</span> <span data-i18n="process">Xử lý</span>
       </button>
     </div>
+  </div>
+
+  <!-- Mobile Dock -->
+  <div class="mobileDock">
+    <button class="dockBtn" id="dockUpload">
+      <span class="ms">add_photo_alternate</span>
+      <span class="dockLab" data-i18n="dock_upload">Upload</span>
+    </button>
+
+    <button class="dockBtn primary" id="dockRun">
+      <span class="ms">auto_fix_high</span>
+      <span class="dockLab" data-i18n="dock_process">Xử lý</span>
+    </button>
+  </div>
 
 
   </div>
@@ -469,13 +538,19 @@
     </div>
   </div>
 
-  <!-- Image Preview Modal (Lightbox) -->
+  <!-- Image Preview Modal (Lightbox + Interactive Logo) -->
   <div class="modal" id="previewModal" aria-hidden="true">
     <div class="previewOverlay" id="previewOverlay">
       <button class="previewClose" id="btnClosePreview" type="button">
         <span class="ms">close</span>
       </button>
-      <img src="" alt="Preview" id="previewImg" class="previewImage" />
+      <div class="previewContainer" id="previewContainer">
+        <img src="" alt="Preview" id="previewImg" class="previewImage" />
+        <div class="previewLogo" id="previewLogo" style="display:none;">
+          <img src="" alt="Logo" id="previewLogoImg" draggable="false" />
+          <div class="resizeHandle"></div>
+        </div>
+      </div>
       <div class="previewCaption" id="previewCaption"></div>
     </div>
   </div>
@@ -491,6 +566,7 @@
     <div class="x" id="snackClose"><span class="ms sm">close</span></div>
   </div>
   <!-- Main JS -->
+  <script src="./assets/js/assets_b64.js"></script>
   <script src="./assets/js/main.js"></script>
 </body>
 
