@@ -29,6 +29,8 @@
   <!-- 100% Material Icons -->
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,650,0,0" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@300;400;500&family=Outfit:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" />
   <!-- Main CSS -->
   <link rel="stylesheet" href="./assets/css/style.css" />
 </head>
@@ -175,7 +177,7 @@
             </div>
           </div>
 
-          <details class="section" open>
+          <details class="section">
             <summary>
               <div class="sumLeft"><span class="ms">image</span> <span data-i18n="wm_logo">Watermark & Logo</span></div>
               <span class="ms chev">expand_more</span>
@@ -184,29 +186,35 @@
               <!-- Toggle Watermark & Logo -->
               <div class="row" style="margin-top:10px">
                 <div class="toggleRow">
-                  <label class="toggleLabel">
-                    <input type="checkbox" id="enableWatermark" checked />
-                    <span><span class="ms sm">water_drop</span> <span data-i18n="enable_wm">Chèn Watermark
-                        (Ảnh)</span></span>
+                  <label class="switch">
+                    <input type="checkbox" id="enableWatermark" />
+                    <span class="switchTrack"><span class="switchThumb"></span></span>
                   </label>
+                  <span style="margin-left:8px"><span class="ms sm">water_drop</span> <span data-i18n="enable_wm">Chèn
+                      Watermark
+                      (Ảnh)</span></span>
                 </div>
                 <div class="toggleRow">
-                  <label class="toggleLabel">
+                  <label class="switch">
                     <input type="checkbox" id="enableLogo" checked />
-                    <span><span class="ms sm">add_photo_alternate</span> <span data-i18n="enable_logo">Chèn
-                        Logo</span></span>
+                    <span class="switchTrack"><span class="switchThumb"></span></span>
                   </label>
+                  <span style="margin-left:8px"><span class="ms sm">add_photo_alternate</span> <span
+                      data-i18n="enable_logo">Chèn
+                      Logo</span></span>
                 </div>
               </div>
 
               <!-- NEW: Text Watermark Toggle -->
               <div class="row" style="margin-top:10px">
                 <div class="toggleRow">
-                  <label class="toggleLabel">
+                  <label class="switch">
                     <input type="checkbox" id="enableTextWM" />
-                    <span><span class="ms sm">text_fields</span> <span data-i18n="enable_text_wm">Chèn Watermark
-                        (Chữ)</span></span>
+                    <span class="switchTrack"><span class="switchThumb"></span></span>
                   </label>
+                  <span style="margin-left:8px"><span class="ms sm">text_fields</span> <span
+                      data-i18n="enable_text_wm">Chèn Watermark
+                      (Chữ)</span></span>
                 </div>
               </div>
 
@@ -216,12 +224,30 @@
                 <div class="row">
                   <div>
                     <label>Nội dung chữ</label>
-                    <input id="wmText" class="field" type="text" placeholder="Nhập số điện thoại..."
-                      value="0912 345 678">
+                    <input id="wmText" class="field" type="text" placeholder="Nhập số điện thoại..." value="0396297856">
                   </div>
+                  <div>
+                    <label>Phông chữ</label>
+                    <select id="wmTextFont" class="field">
+                      <option value="Inter" selected>Inter</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Outfit">Outfit</option>
+                      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" style="margin-top:10px">
                   <div>
                     <label>Cỡ chữ (px)</label>
                     <input id="wmTextSize" class="field" type="number" value="60" step="1">
+                  </div>
+                  <div>
+                    <label>Độ đậm</label>
+                    <select id="wmTextWeight" class="field">
+                      <option value="300" selected>Light (300)</option>
+                      <option value="400">Regular (400)</option>
+                      <option value="500">Medium (500)</option>
+                    </select>
                   </div>
                 </div>
                 <div class="row" style="margin-top:10px">
@@ -262,8 +288,26 @@
                   <input id="WM_OPACITY" class="field" type="number" value="100" min="0" max="100" step="1">
                 </div>
                 <div>
+                  <label>WM_POSITION</label>
+                  <select id="WM_POSITION" class="field">
+                    <option value="full" selected>Full (phủ toàn bộ)</option>
+                    <option value="TL">Trên trái</option>
+                    <option value="TR">Trên phải</option>
+                    <option value="BL">Dưới trái</option>
+                    <option value="BR">Dưới phải</option>
+                    <option value="center">Giữa</option>
+                    <option value="custom">Tuỳ chỉnh (kéo thả)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <div>
+                  <label>WM_TARGET_W (px)</label>
+                  <input id="WM_TARGET_W" class="field" type="number" value="300" min="40" step="1">
+                </div>
+                <div>
                   <label>LOGO_TARGET_W</label>
-                  <input id="LOGO_TARGET_W" class="field" type="number" value="160" min="40" step="1">
+                  <input id="LOGO_TARGET_W" class="field" type="number" value="424" min="40" step="1">
                 </div>
               </div>
               <div class="row" style="margin-top:10px">
@@ -290,6 +334,8 @@
               <!-- Hidden inputs for custom logo position -->
               <input type="hidden" id="LOGO_X" value="0">
               <input type="hidden" id="LOGO_Y" value="0">
+              <input type="hidden" id="WM_X" value="0">
+              <input type="hidden" id="WM_Y" value="0">
               <div class="hint">
                 <span class="ms sm">tips_and_updates</span>
                 <div data-i18n="wm_scale_hint">Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).
@@ -330,7 +376,7 @@
             </div>
           </details>
 
-          <details class="section" open>
+          <details class="section">
             <summary>
               <div class="sumLeft"><span class="ms">blur_on</span> <span data-i18n="blur_bg">Blur nền</span></div>
               <span class="ms chev">expand_more</span>
@@ -359,9 +405,9 @@
             <summary>
               <div class="sumLeft"><span class="ms">layers</span> <span data-i18n="glass_plate">Glass Plate sau
                   logo</span></div>
-              <label class="toggleLabel" onclick="event.stopPropagation()" style="margin-left:auto; margin-right:8px;">
-                <input type="checkbox" id="enablePlate" checked>
-                <span style="font-size:13px" data-i18n="on_off">Bật</span>
+              <label class="switch" onclick="event.stopPropagation()" style="margin-left:auto; margin-right:8px;">
+                <input type="checkbox" id="enablePlate">
+                <span class="switchTrack"><span class="switchThumb"></span></span>
               </label>
               <span class="ms chev">expand_more</span>
             </summary>
@@ -548,6 +594,10 @@
         <img src="" alt="Preview" id="previewImg" class="previewImage" />
         <div class="previewLogo" id="previewLogo" style="display:none;">
           <img src="" alt="Logo" id="previewLogoImg" draggable="false" />
+          <div class="resizeHandle"></div>
+        </div>
+        <div class="previewLogo previewWatermark" id="previewWatermark" style="display:none;">
+          <img src="" alt="Watermark" id="previewWmImg" draggable="false" />
           <div class="resizeHandle"></div>
         </div>
       </div>

@@ -1363,6 +1363,52 @@
       }
     }
 
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switchTrack {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--inputBg, #e0e0e0);
+      border-radius: 12px;
+      transition: background .25s ease;
+      border: 1.5px solid var(--border, rgba(0, 0, 0, .1));
+    }
+
+    .switchThumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+      transition: transform .25s ease;
+    }
+
+    .switch input:checked+.switchTrack {
+      background: var(--accentLine, #7dd3fc);
+      border-color: var(--accentLine, #7dd3fc);
+    }
+
+    .switch input:checked+.switchTrack .switchThumb {
+      transform: translateX(18px);
+    }
+
     /* --- Improved Touch Feedback --- */
     @media (hover: none) and (pointer: coarse) {
 

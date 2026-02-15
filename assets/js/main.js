@@ -457,6 +457,7 @@ function roundRect(ctx, x, y, w, h, r) {
 function renderOne({
     src, wm, logo,
     OUT_SIZE, BG_BLUR, BG_SCALE,
+    WM_POSITION = 'full', WM_TARGET_W = 300,
     LOGO_TARGET_W, LOGO_MARGIN,
     LOGO_PLATE_PADDING, LOGO_PLATE_BLUR,
     LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
@@ -504,7 +505,24 @@ function renderOne({
     if (wm) {
         octx.save();
         octx.globalAlpha = clamp(WM_OPACITY, 0, 100) / 100;
-        octx.drawImage(wm, 0, 0, OUT_SIZE, OUT_SIZE);
+        if (WM_POSITION === 'full') {
+            octx.drawImage(wm, 0, 0, OUT_SIZE, OUT_SIZE);
+        } else {
+            const wmAspect = wm.width / wm.height;
+            const wmW = WM_TARGET_W;
+            const wmH = wmW / wmAspect;
+            let wx = 0, wy = 0;
+            const m = LOGO_MARGIN || 28;
+            if (WM_POSITION === 'custom') {
+                wx = (+document.getElementById('WM_X').value || 0) * OUT_SIZE;
+                wy = (+document.getElementById('WM_Y').value || 0) * OUT_SIZE;
+            } else if (WM_POSITION === 'TL') { wx = m; wy = m; }
+            else if (WM_POSITION === 'TR') { wx = OUT_SIZE - wmW - m; wy = m; }
+            else if (WM_POSITION === 'BL') { wx = m; wy = OUT_SIZE - wmH - m; }
+            else if (WM_POSITION === 'BR') { wx = OUT_SIZE - wmW - m; wy = OUT_SIZE - wmH - m; }
+            else if (WM_POSITION === 'center') { wx = (OUT_SIZE - wmW) / 2; wy = (OUT_SIZE - wmH) / 2; }
+            octx.drawImage(wm, wx, wy, wmW, wmH);
+        }
         octx.restore();
     }
 
@@ -512,22 +530,29 @@ function renderOne({
         octx.save();
         octx.globalAlpha = textConfig.opacity / 100;
         octx.fillStyle = textConfig.color === "white" ? "white" : textConfig.color === "red" ? "red" : textConfig.color === "blue" ? "blue" : "black";
-        octx.font = `bold ${textConfig.size}px sans-serif`;
+        octx.font = `${textConfig.weight} ${textConfig.size}px '${textConfig.font}', sans-serif`;
         octx.textBaseline = "middle";
 
-        const txt = textConfig.text + "   "; // space between repeats
+        const txt = textConfig.text + "   ";
         const tw = octx.measureText(txt).width;
         if (tw > 0) {
             const cols = Math.ceil(OUT_SIZE / tw) + 1;
             const rows = textConfig.repeats;
             const RowH = textConfig.size * 1.5;
+            const totalH = rows * RowH;
 
-            // Draw at bottom
-            const startY = OUT_SIZE - (rows * RowH) + (RowH / 2) - (RowH * 0.2);
+            let startY;
+            if (WM_POSITION === 'custom') {
+                // Custom position: use WM_Y offset
+                const wmY = (+document.getElementById('WM_Y').value || 0) * OUT_SIZE;
+                startY = wmY + (RowH / 2);
+            } else {
+                // Default: bottom of image
+                startY = OUT_SIZE - totalH + (RowH / 2) - (RowH * 0.2);
+            }
 
             for (let r = 0; r < rows; r++) {
                 const y = startY + (r * RowH);
-                // Alternate offset quite simply
                 const offset = r % 2 === 0 ? 0 : -(tw / 2);
 
                 for (let c = 0; c < cols; c++) {
@@ -640,26 +665,40 @@ async function openInteractivePreview() {
         size: clamp(+$("wmTextSize").value || 60, 10, 500),
         opacity: clamp(+$("wmTextOpacity").value || 30, 0, 100),
         color: $("wmTextColor").value || "black",
-        repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10)
+        repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10),
+        font: $("wmTextFont").value || "Inter",
+        weight: $("wmTextWeight").value || "300"
     };
 
-    // 1. Render Background (No Logo)
+    const WM_POS = $("WM_POSITION").value || "full";
+    const WM_TARGET_W_VAL = clamp(+$("WM_TARGET_W").value || 300, 40, 4000);
+    const wmEnabled = wmImg && $("enableWatermark").checked;
+
+    // 1. Render Background (No Logo, no watermark — watermark shown as overlay)
+    // When text WM is enabled, don't bake it into background — show as overlay
+    const previewTextConfig = enableTextWM ? { ...textConfig, enabled: false } : textConfig;
     const bgCanvas = renderOne({
-        src, wm: wmImg, logo: null, // No logo here
+        src,
+        wm: null, // Never bake image watermark into bg for preview — show as overlay
+        logo: null,
         OUT_SIZE, BG_BLUR, BG_SCALE,
+        WM_POSITION: WM_POS,
+        WM_TARGET_W: WM_TARGET_W_VAL,
         LOGO_TARGET_W, LOGO_MARGIN, LOGO_PLATE_PADDING, LOGO_PLATE_BLUR, LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
         ENABLE_PLATE: $("enablePlate").checked,
-        WM_OPACITY, textConfig
+        WM_OPACITY, textConfig: previewTextConfig
     });
 
     // 2. Setup Preview Modal
     const modal = $("previewModal");
-    const imgParam = $("previewImg"); // Background img
+    const imgParam = $("previewImg");
     const logoDiv = $("previewLogo");
     const logoImgEl = $("previewLogoImg");
+    const wmDiv = $("previewWatermark");
+    const wmImgEl = $("previewWmImg");
 
     modal.classList.add("show");
-    $("previewCaption").textContent = "Preview: " + it.name + " (Kéo logo để chỉnh vị trí)";
+    $("previewCaption").textContent = "Preview: " + it.name + " (Kéo logo/watermark để chỉnh vị trí)";
 
     // Set background
     const format = $("OUT_FORMAT").value || "jpg";
@@ -671,7 +710,6 @@ async function openInteractivePreview() {
     if (logoImg && $("enableLogo").checked) {
         logoDiv.style.display = "block";
 
-        // Get logo URL directly (logoImg may be ImageBitmap without .src)
         const logoFile = $("inLogo").files[0];
         if (logoFile) {
             logoImgEl.src = URL.createObjectURL(logoFile);
@@ -679,20 +717,14 @@ async function openInteractivePreview() {
             logoImgEl.src = DEFAULT_LOGO_URL;
         }
 
-        // Wait for image to load to measure dims? No, logoImg is already loaded or we wait.
-
-        // Calculate logical position
         const logoAspect = logoImg.width / logoImg.height;
-        const curLogoW = LOGO_TARGET_W; // in output pixels
+        const curLogoW = LOGO_TARGET_W;
         const curLogoH = curLogoW / logoAspect;
 
         let lx, ly;
-        // Logic to determine lx/ly based on LOGO_POSITION
         if (LOGO_POSITION === "custom") {
-            const cx = +$("LOGO_X").value || 0;
-            const cy = +$("LOGO_Y").value || 0;
-            lx = cx * OUT_SIZE;
-            ly = cy * OUT_SIZE;
+            lx = (+$("LOGO_X").value || 0) * OUT_SIZE;
+            ly = (+$("LOGO_Y").value || 0) * OUT_SIZE;
         } else if (LOGO_POSITION === "TR") {
             lx = OUT_SIZE - curLogoW - LOGO_MARGIN; ly = LOGO_MARGIN;
         } else if (LOGO_POSITION === "BL") {
@@ -705,25 +737,128 @@ async function openInteractivePreview() {
             lx = LOGO_MARGIN; ly = LOGO_MARGIN;
         }
 
-        // We need to map OUT_SIZE pixels to PREVIEW pixels.
-        // The preview image acts as container.
-
-        // Wait for preview image render to know natural/displayed sizes?
-        // Actually, we can just use percentages for display!
-        // left: (lx / OUT_SIZE) * 100 %
-
         logoDiv.style.left = (lx / OUT_SIZE * 100) + "%";
         logoDiv.style.top = (ly / OUT_SIZE * 100) + "%";
         logoDiv.style.width = (curLogoW / OUT_SIZE * 100) + "%";
-        logoDiv.style.height = "auto"; // aspect ratio preserved by img
+        logoDiv.style.height = "auto";
 
-        // Store current logical state for custom calc
         logoDiv.dataset.lx = lx;
         logoDiv.dataset.ly = ly;
         logoDiv.dataset.w = curLogoW;
-
     } else {
         logoDiv.style.display = "none";
+    }
+
+    // 4. Setup Watermark Overlay (image OR text — mutually exclusive)
+    // enableTextWM already declared above
+
+    if (wmEnabled) {
+        // === IMAGE WATERMARK OVERLAY ===
+        wmDiv.style.display = "block";
+
+        const wmFile = $("inWM").files[0];
+        if (wmFile) {
+            wmImgEl.src = URL.createObjectURL(wmFile);
+        } else {
+            wmImgEl.src = DEFAULT_WM_URL;
+        }
+
+        const wmAspect = wmImg.width / wmImg.height;
+        const m = LOGO_MARGIN;
+        let curWmW, wx, wy;
+
+        if (WM_POS === "full") {
+            curWmW = OUT_SIZE;
+            wx = 0; wy = 0;
+        } else if (WM_POS === "custom") {
+            curWmW = WM_TARGET_W_VAL;
+            wx = (+$("WM_X").value || 0) * OUT_SIZE;
+            wy = (+$("WM_Y").value || 0) * OUT_SIZE;
+        } else {
+            curWmW = WM_TARGET_W_VAL;
+            const curWmH = curWmW / wmAspect;
+            if (WM_POS === "TL") { wx = m; wy = m; }
+            else if (WM_POS === "TR") { wx = OUT_SIZE - curWmW - m; wy = m; }
+            else if (WM_POS === "BL") { wx = m; wy = OUT_SIZE - curWmH - m; }
+            else if (WM_POS === "BR") { wx = OUT_SIZE - curWmW - m; wy = OUT_SIZE - curWmH - m; }
+            else if (WM_POS === "center") { wx = (OUT_SIZE - curWmW) / 2; wy = (OUT_SIZE - curWmH) / 2; }
+            else { wx = m; wy = m; }
+        }
+
+        wmDiv.style.left = (wx / OUT_SIZE * 100) + "%";
+        wmDiv.style.top = (wy / OUT_SIZE * 100) + "%";
+        wmDiv.style.width = (curWmW / OUT_SIZE * 100) + "%";
+        wmDiv.style.height = "auto";
+        wmDiv.style.opacity = clamp(WM_OPACITY, 0, 100) / 100;
+
+        wmDiv.dataset.wx = wx;
+        wmDiv.dataset.wy = wy;
+        wmDiv.dataset.w = curWmW;
+
+    } else if (enableTextWM && textConfig.text) {
+        // === TEXT WATERMARK OVERLAY ===
+        // Render text watermark onto a temp canvas, then show as overlay
+        const tCanvas = document.createElement("canvas");
+        const tCtx = tCanvas.getContext("2d");
+
+        // Measure text to determine canvas size
+        tCtx.font = `${textConfig.weight} ${textConfig.size}px '${textConfig.font}', sans-serif`;
+        const txt = textConfig.text + "   ";
+        const tw = tCtx.measureText(txt).width;
+        if (tw > 0) {
+            const cols = Math.ceil(OUT_SIZE / tw) + 1;
+            const rows = textConfig.repeats;
+            const rowH = textConfig.size * 1.5;
+            const totalW = OUT_SIZE;
+            const totalH = rows * rowH;
+
+            tCanvas.width = totalW;
+            tCanvas.height = totalH;
+
+            tCtx.font = `${textConfig.weight} ${textConfig.size}px '${textConfig.font}', sans-serif`;
+            tCtx.fillStyle = textConfig.color === "white" ? "white" : textConfig.color === "red" ? "red" : textConfig.color === "blue" ? "blue" : "black";
+            tCtx.textBaseline = "middle";
+
+            for (let r = 0; r < rows; r++) {
+                const y = (r * rowH) + (rowH / 2);
+                const offset = r % 2 === 0 ? 0 : -(tw / 2);
+                for (let c = 0; c < cols; c++) {
+                    tCtx.fillText(txt, offset + (c * tw), y);
+                }
+            }
+
+            wmImgEl.src = tCanvas.toDataURL("image/png");
+            wmDiv.style.display = "block";
+
+            // Position: default at bottom, or custom
+            const m = LOGO_MARGIN;
+            const curWmW = OUT_SIZE;
+            const curWmH = totalH;
+            let wx, wy;
+
+            if (WM_POS === "custom") {
+                wx = (+$("WM_X").value || 0) * OUT_SIZE;
+                wy = (+$("WM_Y").value || 0) * OUT_SIZE;
+            } else {
+                // Default: bottom of image
+                wx = 0;
+                wy = OUT_SIZE - curWmH;
+            }
+
+            wmDiv.style.left = (wx / OUT_SIZE * 100) + "%";
+            wmDiv.style.top = (wy / OUT_SIZE * 100) + "%";
+            wmDiv.style.width = (curWmW / OUT_SIZE * 100) + "%";
+            wmDiv.style.height = "auto";
+            wmDiv.style.opacity = clamp(textConfig.opacity, 0, 100) / 100;
+
+            wmDiv.dataset.wx = wx;
+            wmDiv.dataset.wy = wy;
+            wmDiv.dataset.w = curWmW;
+        } else {
+            wmDiv.style.display = "none";
+        }
+    } else {
+        wmDiv.style.display = "none";
     }
 }
 
@@ -865,6 +1000,137 @@ function endResize() {
     renderOutputThumbs();
 }
 
+// ===== WATERMARK DRAG & RESIZE =====
+let isDraggingWm = false;
+let isResizingWm = false;
+let wmDragStartX, wmDragStartY;
+let initialWmLeft, initialWmTop;
+let initialWmW;
+
+const pWm = $("previewWatermark");
+
+pWm.addEventListener("mousedown", startWmDrag);
+pWm.addEventListener("touchstart", startWmDrag, { passive: false });
+
+function startWmDrag(e) {
+    if (e.target.classList.contains("resizeHandle")) return;
+    e.preventDefault();
+    isDraggingWm = true;
+
+    $("WM_POSITION").value = "custom";
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    wmDragStartX = clientX;
+    wmDragStartY = clientY;
+
+    initialWmLeft = parseFloat(pWm.style.left);
+    initialWmTop = parseFloat(pWm.style.top);
+
+    pWm.classList.add("dragging");
+    document.addEventListener("mousemove", onWmDrag);
+    document.addEventListener("touchmove", onWmDrag, { passive: false });
+    document.addEventListener("mouseup", endWmDrag);
+    document.addEventListener("touchend", endWmDrag);
+}
+
+function onWmDrag(e) {
+    if (!isDraggingWm) return;
+    e.preventDefault();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - wmDragStartX;
+    const dy = clientY - wmDragStartY;
+
+    const cw = pContainer.clientWidth;
+    const ch = pContainer.clientHeight;
+
+    const dxPct = (dx / cw) * 100;
+    const dyPct = (dy / ch) * 100;
+
+    pWm.style.left = (initialWmLeft + dxPct) + "%";
+    pWm.style.top = (initialWmTop + dyPct) + "%";
+}
+
+function endWmDrag() {
+    if (!isDraggingWm) return;
+    isDraggingWm = false;
+    pWm.classList.remove("dragging");
+
+    document.removeEventListener("mousemove", onWmDrag);
+    document.removeEventListener("touchmove", onWmDrag);
+    document.removeEventListener("mouseup", endWmDrag);
+    document.removeEventListener("touchend", endWmDrag);
+
+    const leftPct = parseFloat(pWm.style.left) / 100;
+    const topPct = parseFloat(pWm.style.top) / 100;
+
+    $("WM_X").value = leftPct;
+    $("WM_Y").value = topPct;
+
+    resetOutputs();
+    renderOutputThumbs();
+}
+
+// Watermark Resize
+const pWmHandle = pWm.querySelector(".resizeHandle");
+pWmHandle.addEventListener("mousedown", startWmResize);
+pWmHandle.addEventListener("touchstart", startWmResize, { passive: false });
+
+function startWmResize(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    isResizingWm = true;
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    wmDragStartX = clientX;
+
+    initialWmW = parseFloat(pWm.style.width);
+
+    pWm.classList.add("dragging");
+    document.addEventListener("mousemove", onWmResize);
+    document.addEventListener("touchmove", onWmResize, { passive: false });
+    document.addEventListener("mouseup", endWmResize);
+    document.addEventListener("touchend", endWmResize);
+}
+
+function onWmResize(e) {
+    if (!isResizingWm) return;
+    e.preventDefault();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const dx = clientX - wmDragStartX;
+
+    const cw = pContainer.clientWidth;
+    const dxPct = (dx / cw) * 100;
+
+    const newW = Math.max(5, initialWmW + dxPct);
+    pWm.style.width = newW + "%";
+}
+
+function endWmResize() {
+    if (!isResizingWm) return;
+    isResizingWm = false;
+    pWm.classList.remove("dragging");
+
+    document.removeEventListener("mousemove", onWmResize);
+    document.removeEventListener("touchmove", onWmResize);
+    document.removeEventListener("mouseup", endWmResize);
+    document.removeEventListener("touchend", endWmResize);
+
+    const widthPct = parseFloat(pWm.style.width) / 100;
+    const OUT_SIZE = +$("OUT_SIZE").value || 2000;
+
+    const newTargetW = Math.round(widthPct * OUT_SIZE);
+    $("WM_TARGET_W").value = newTargetW;
+
+    resetOutputs();
+    renderOutputThumbs();
+}
+
 
 /* ===== LIVE PREVIEW (Legacy - override with Interactive) ===== */
 async function previewFirstItem() {
@@ -887,11 +1153,11 @@ function updateInteractivePreview() {
 // Hook into existing listeners for auto-update
 const configIdsForPreview = [
     "inWM", "inLogo", "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE",
-    "WM_OPACITY", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
+    "WM_OPACITY", "WM_POSITION", "WM_TARGET_W", "WM_X", "WM_Y", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
     "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR",
     "enableWatermark", "enableLogo", "enablePlate",
     "LOGO_POSITION",
-    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats"
+    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats", "wmTextFont", "wmTextWeight"
 ];
 
 configIdsForPreview.forEach((id) => {
@@ -1264,6 +1530,8 @@ $("inFolder").addEventListener("change", (e) => {
 // Toggle Text Watermark Settings
 $("enableTextWM").addEventListener("change", () => {
     const on = $("enableTextWM").checked;
+    // Mutual exclusion: turn off image watermark when text is on
+    if (on) $("enableWatermark").checked = false;
     const settings = $("textWmSettings");
     if (settings) settings.style.display = on ? "block" : "none";
 
@@ -1272,14 +1540,23 @@ $("enableTextWM").addEventListener("change", () => {
     updateKPIs();
 });
 
+// Mutual exclusion: turn off text watermark when image watermark is on
+$("enableWatermark").addEventListener("change", () => {
+    if ($("enableWatermark").checked) {
+        $("enableTextWM").checked = false;
+        const settings = $("textWmSettings");
+        if (settings) settings.style.display = "none";
+    }
+});
+
 // config change => invalidate outputs
 const configIds = [
     "inWM", "inLogo", "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE",
-    "WM_OPACITY", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
+    "WM_OPACITY", "WM_POSITION", "WM_TARGET_W", "WM_X", "WM_Y", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
     "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR",
     "enableWatermark", "enableLogo", "enablePlate",
     "LOGO_POSITION",
-    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats"
+    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats", "wmTextFont", "wmTextWeight"
 ];
 
 configIds.forEach((id) => {
@@ -1496,6 +1773,8 @@ async function runBatch() {
         const BG_SCALE = clamp(+$("BG_SCALE").value || 115, 100, 250);
 
         const WM_OPACITY = clamp(+$("WM_OPACITY").value || 100, 0, 100);
+        const WM_POSITION = $("WM_POSITION").value || "full";
+        const WM_TARGET_W = clamp(+$("WM_TARGET_W").value || 300, 40, 4000);
         const LOGO_TARGET_W = clamp(+$("LOGO_TARGET_W").value || 160, 20, 2000);
         const LOGO_MARGIN = clamp(+$("LOGO_MARGIN").value || 28, 0, 3000);
 
@@ -1515,7 +1794,9 @@ async function runBatch() {
             size: clamp(+$("wmTextSize").value || 60, 10, 500),
             opacity: clamp(+$("wmTextOpacity").value || 30, 0, 100),
             color: $("wmTextColor").value || "black",
-            repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10)
+            repeats: clamp(+$("wmTextRepeats").value || 3, 1, 10),
+            font: $("wmTextFont").value || "Inter",
+            weight: $("wmTextWeight").value || "300"
         };
 
         for (let i = 0; i < items.length; i++) {
@@ -1528,6 +1809,7 @@ async function runBatch() {
                 wm: wmImg,
                 logo: logoImg,
                 OUT_SIZE, BG_BLUR, BG_SCALE,
+                WM_POSITION, WM_TARGET_W,
                 LOGO_TARGET_W, LOGO_MARGIN,
                 LOGO_PLATE_PADDING, LOGO_PLATE_BLUR,
                 LOGO_PLATE_OPACITY, LOGO_PLATE_COLOR,
