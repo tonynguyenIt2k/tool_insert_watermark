@@ -1627,8 +1627,9 @@ const previewCaption = $("previewCaption");
 function openPreview(imgSrc, caption) {
     previewImg.src = imgSrc;
     previewCaption.textContent = caption || "";
-    // Hide interactive logo overlay (it's only for interactive preview, not result lightbox)
+    // Hide interactive logo/watermark overlays (only for interactive preview, not result lightbox)
     $("previewLogo").style.display = "none";
+    $("previewWatermark").style.display = "none";
     previewModal.classList.add("show");
     previewModal.setAttribute("aria-hidden", "false");
     document.documentElement.style.overflow = "hidden";
