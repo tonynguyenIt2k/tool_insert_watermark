@@ -574,14 +574,12 @@ function renderOne({
         // Position Logic
         const pos = LOGO_POSITION || "TL";
         if (pos === "custom") { // Custom logic
-            if (logo.customX !== undefined && logo.customY !== undefined) {
-                lx = logo.customX * OUT_SIZE;
-                ly = logo.customY * OUT_SIZE;
-            } else {
-                // Fallback if not set
-                lx = (OUT_SIZE - lw) / 2;
-                ly = (OUT_SIZE - lh) / 2;
-            }
+            // Directly read from hidden inputs
+            const customX = +$("LOGO_X").value || 0;
+            const customY = +$("LOGO_Y").value || 0;
+            // Use values if they exist (even if 0)
+            lx = customX * OUT_SIZE;
+            ly = customY * OUT_SIZE;
         } else if (pos === "TR") {
             lx = OUT_SIZE - lw - LOGO_MARGIN;
             ly = LOGO_MARGIN;
@@ -699,6 +697,8 @@ async function openInteractivePreview() {
 
     modal.classList.add("show");
     $("previewCaption").textContent = "Preview: " + it.name + " (Kéo logo/watermark để chỉnh vị trí)";
+    const btnConfirm = $("btnConfirmPreview");
+    if (btnConfirm) btnConfirm.style.display = "inline-flex";
 
     // Set background
     const format = $("OUT_FORMAT").value || "jpg";
@@ -1630,6 +1630,10 @@ function openPreview(imgSrc, caption) {
     // Hide interactive logo/watermark overlays (only for interactive preview, not result lightbox)
     $("previewLogo").style.display = "none";
     $("previewWatermark").style.display = "none";
+    // Hide confirm button (only for interactive preview)
+    const btnConfirm = $("btnConfirmPreview");
+    if (btnConfirm) btnConfirm.style.display = "none";
+
     previewModal.classList.add("show");
     previewModal.setAttribute("aria-hidden", "false");
     document.documentElement.style.overflow = "hidden";
@@ -1643,6 +1647,8 @@ function closePreview() {
 }
 
 $("btnClosePreview").addEventListener("click", closePreview);
+const btnConfirm = $("btnConfirmPreview");
+if (btnConfirm) btnConfirm.addEventListener("click", closePreview);
 $("previewOverlay").addEventListener("click", (e) => {
     // Close if clicking outside the image
     if (e.target === $("previewOverlay") || e.target === previewImg) {

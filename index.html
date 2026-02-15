@@ -290,13 +290,13 @@
                 <div>
                   <label>WM_POSITION</label>
                   <select id="WM_POSITION" class="field">
-                    <option value="full" selected>Full (phủ toàn bộ)</option>
+                    <option value="full">Full (phủ toàn bộ)</option>
                     <option value="TL">Trên trái</option>
                     <option value="TR">Trên phải</option>
                     <option value="BL">Dưới trái</option>
                     <option value="BR">Dưới phải</option>
                     <option value="center">Giữa</option>
-                    <option value="custom">Tuỳ chỉnh (kéo thả)</option>
+                    <option value="custom" selected>Tuỳ chỉnh (kéo thả)</option>
                   </select>
                 </div>
               </div>
@@ -319,11 +319,12 @@
                 <div>
                   <label>Vị trí Logo</label>
                   <select id="LOGO_POSITION" class="field">
-                    <option value="TL" selected>Góc Trái Trên</option>
+                    <option value="TL">Góc Trái Trên</option>
                     <option value="TR">Góc Phải Trên</option>
                     <option value="BL">Góc Trái Dưới</option>
                     <option value="BR">Góc Phải Dưới</option>
                     <option value="center">Chính Giữa</option>
+                    <option value="custom" selected>Tuỳ chỉnh</option>
                   </select>
                 </div>
                 <div>
@@ -602,6 +603,9 @@
         </div>
       </div>
       <div class="previewCaption" id="previewCaption"></div>
+      <button class="btn primary" id="btnConfirmPreview" type="button" style="margin-top: 10px;">
+        <span class="ms">check</span> Xác nhận vị trí
+      </button>
     </div>
   </div>
 
