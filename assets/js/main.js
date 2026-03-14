@@ -13,6 +13,27 @@ let items = [];
 let wmImg = null, logoImg = null;
 let processing = false;
 
+// Firebase Initialization
+const firebaseConfig = {
+    apiKey: "AIzaSyBnI9k12C4yq0h9_-ek4wLFPCUWK9dgWUE",
+    authDomain: "nhatot24h-84173.firebaseapp.com",
+    projectId: "nhatot24h-84173",
+    storageBucket: "nhatot24h-84173.firebasestorage.app",
+    messagingSenderId: "618857393712",
+    appId: "1:618857393712:web:813612e08aa283fa3247f5",
+    databaseURL: "https://nhatot24h-84173-default-rtdb.firebaseio.com"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.database();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+let currentUser = null;
+let isApplyingRemoteSettings = false; // Flag to prevent infinite sync loops
+
 // Convert HEIC to JPG using heic2any library
 async function convertHeicToJpg(file) {
     if (!isHeic(file)) return file;
@@ -48,9 +69,8 @@ const I18N = {
         settings: "Cài đặt",
         clear: "Xoá",
         process: "Xử lý",
-        input_title: "Ảnh gốc (Preview bên trên)",
-        input_desc: `Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
-        <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và <code>./assets/watermark/watermark.png</code> (có thể chọn lại trong Cài đặt để override).`,
+        input_title: "Ảnh gốc",
+        input_desc: `Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.`,
         drop_title: "Kéo thả ảnh vào đây",
         drop_desc: "Chrome/Edge hỗ trợ chọn thư mục (webkitdirectory).",
         pick_files: "Chọn nhiều ảnh (cộng dồn)",
@@ -68,7 +88,7 @@ const I18N = {
         tip3_title: "File mặc định",
         tip4_title: "Quy trình chuẩn",
         tip4_desc: "Upload → (tuỳ chọn) Cài đặt → Xử lý → Tải lẻ / Tải chọn / ZIP.",
-        out_title: "Kết quả (Preview bên dưới)",
+        out_title: "Kết quả",
         out_desc: "Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.",
         ready: "Sẵn sàng",
         select_all: "Chọn tất",
@@ -90,8 +110,8 @@ const I18N = {
         wm_logo: "Watermark & Logo",
         enable_wm: "Chèn Watermark",
         enable_logo: "Chèn Logo",
-        wm_file: "Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)",
-        logo_file: "Logo PNG (mặc định: ./assets/logo/logo.png)",
+        wm_file: "Watermark PNG overlay",
+        logo_file: "Logo PNG",
         wm_scale_hint: "Watermark đã tự scale theo OUT_SIZE (không còn phụ thuộc 1080×1080).",
         out_format: "Định dạng xuất",
         jpg_quality: "JPG_QUALITY (1–12) — chỉ dùng khi JPG",
@@ -136,7 +156,9 @@ const I18N = {
         confirm_tip: "Tip: Nếu bạn không muốn thấy bước này, hãy chọn ảnh lẻ (multi-file) hoặc kéo thả ảnh vào vùng Upload.",
         confirm_cancel: "Huỷ",
         confirm_continue: "Tiếp tục",
-        confirm_esc: "Nhấn <b>ESC</b> để đóng."
+        confirm_esc: "Nhấn <b>ESC</b> để đóng.",
+        login: "Đăng nhập",
+        logout: "Đăng xuất"
     },
     en: {
         title: "Batch 1:1 • Blurred BG • Watermark • Logo + Glass Plate",
@@ -150,9 +172,9 @@ const I18N = {
         settings: "Settings",
         clear: "Clear",
         process: "Process",
-        input_title: "Input photos (Preview above)",
+        input_title: "Input photos",
         input_desc: `Pick multiple times to append. If you pick a folder → show folder icon + name + count only.
-        <br><b>Default:</b> logo + watermark from <code>./assets/logo/logo.png</code> and <code>./assets/watermark/watermark.png</code> (override in Settings).`,
+        <br><b>Default:</b> logo + watermark from <code>./assets/logo/logo.png</code> and <code>./assets/watermark/watermark.png</code>.`,
         drop_title: "Drag & drop images here",
         drop_desc: "Chrome/Edge supports folder picker (webkitdirectory).",
         pick_files: "Pick images (append)",
@@ -170,7 +192,7 @@ const I18N = {
         tip3_title: "Default files",
         tip4_title: "Workflow",
         tip4_desc: "Upload → (optional) Settings → Process → Download single / selected / ZIP.",
-        out_title: "Result (Preview below)",
+        out_title: "Result",
         out_desc: "Results appear after processing. Download single / selected / ZIP.",
         ready: "Ready",
         select_all: "Select all",
@@ -192,8 +214,8 @@ const I18N = {
         wm_logo: "Watermark & Logo",
         enable_wm: "Add Watermark",
         enable_logo: "Add Logo",
-        wm_file: "Watermark PNG overlay (default: ./assets/watermark/watermark.png)",
-        logo_file: "Logo PNG (default: ./assets/logo/logo.png)",
+        wm_file: "Watermark PNG overlay",
+        logo_file: "Logo PNG",
         wm_scale_hint: "Watermark auto-scales with OUT_SIZE (not bound to 1080×1080).",
         out_format: "Output format",
         jpg_quality: "JPG_QUALITY (1–12) — for JPG only",
@@ -238,7 +260,9 @@ const I18N = {
         confirm_tip: "Tip: If you don’t want to see this step, use multi-file picker or drag & drop images.",
         confirm_cancel: "Cancel",
         confirm_continue: "Continue",
-        confirm_esc: "Press <b>ESC</b> to close."
+        confirm_esc: "Press <b>ESC</b> to close.",
+        login: "Login",
+        logout: "Logout"
     }
 };
 
@@ -378,9 +402,12 @@ async function fileToImageSource(file) {
 }
 
 async function urlToImageSource(url) {
+    // If URL is from R2 bucket, proxy through our CORS-enabled worker
+    const proxiedUrl = proxyR2Url(url);
+
     // Strategy 1: fetch (works on http/https)
     try {
-        const res = await fetch(url);
+        const res = await fetch(proxiedUrl);
         if (res.ok) {
             const blob = await res.blob();
             return await decodeToCanvasImageSourceFromBlob(blob);
@@ -391,7 +418,7 @@ async function urlToImageSource(url) {
     try {
         const blob = await new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
+            xhr.open('GET', proxiedUrl, true);
             xhr.responseType = 'blob';
             xhr.onload = () => {
                 if (xhr.status === 200 || xhr.status === 0) {
@@ -408,7 +435,8 @@ async function urlToImageSource(url) {
 
     // Strategy 3: Load as <img>, re-encode via canvas to get clean blob
     const img = new Image();
-    img.src = url;
+    img.crossOrigin = "anonymous";
+    img.src = proxiedUrl;
     await new Promise((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error("Không load được: " + url));
@@ -426,6 +454,21 @@ async function urlToImageSource(url) {
 
     // Last resort: return img directly (may taint canvas)
     return img;
+}
+
+/**
+ * Proxy R2 public URLs through the Cloudflare Worker to add CORS headers.
+ * Non-R2 URLs are returned unchanged.
+ */
+function proxyR2Url(url) {
+    const R2_HOST = "pub-f5b4cee090744ed2b73828a7e619786a.r2.dev";
+    try {
+        const parsed = new URL(url);
+        if (parsed.host === R2_HOST) {
+            return `https://r2-uploader.insertwatermark.workers.dev/proxy?url=${encodeURIComponent(url)}`;
+        }
+    } catch (e) { /* not a valid URL, return as-is */ }
+    return url;
 }
 
 const DEFAULT_WM_URL = (typeof DEFAULT_WM_B64 !== 'undefined') ? DEFAULT_WM_B64 : "./assets/watermark/watermark.png";
@@ -636,8 +679,14 @@ async function openInteractivePreview() {
         return;
     }
 
+    try {
     // Load assets first (logo/watermark) if not already loaded
     await loadAssets();
+    } catch (err) {
+        console.error("loadAssets error:", err);
+        snack("Lỗi tải assets: " + (err?.message || String(err)), "err");
+        return;
+    }
 
     // Get first item
     const it = items[0];
@@ -713,6 +762,8 @@ async function openInteractivePreview() {
         const logoFile = $("inLogo").files[0];
         if (logoFile) {
             logoImgEl.src = URL.createObjectURL(logoFile);
+        } else if (window.customLogoDataURL) {
+            logoImgEl.src = proxyR2Url(window.customLogoDataURL);
         } else {
             logoImgEl.src = DEFAULT_LOGO_URL;
         }
@@ -759,6 +810,8 @@ async function openInteractivePreview() {
         const wmFile = $("inWM").files[0];
         if (wmFile) {
             wmImgEl.src = URL.createObjectURL(wmFile);
+        } else if (window.customWMDataURL) {
+            wmImgEl.src = proxyR2Url(window.customWMDataURL);
         } else {
             wmImgEl.src = DEFAULT_WM_URL;
         }
@@ -1134,7 +1187,12 @@ function endWmResize() {
 
 /* ===== LIVE PREVIEW (Legacy - override with Interactive) ===== */
 async function previewFirstItem() {
-    openInteractivePreview();
+    try {
+        await openInteractivePreview();
+    } catch (err) {
+        console.error("Preview error:", err);
+        snack("Lỗi xem trước: " + (err?.message || String(err)), "err");
+    }
 }
 
 // Hook reset logic.. actually we don't need to re-render preview on drag/resize because 
@@ -1494,6 +1552,18 @@ async function loadAssets() {
     if (enableWM) {
         if (wmFile) {
             wmImg = await fileToImageSource(wmFile);
+        } else if (window.customWMDataURL) {
+            try {
+                wmImg = await urlToImageSource(window.customWMDataURL);
+            } catch (err) {
+                console.warn("Custom WM URL failed, auto-fixing:", err);
+                const brokenUrl = window.customWMDataURL;
+                window.customWMDataURL = null;
+                wmImg = await urlToImageSource(DEFAULT_WM_URL);
+                // Auto-fix: remove broken URL from Firebase
+                autoFixBrokenAssetUrl('customWMDataURL', brokenUrl);
+                snack("Watermark URL lỗi → đã dùng mặc định & tự sửa trên Cloud.", "warn");
+            }
         } else {
             wmImg = await urlToImageSource(DEFAULT_WM_URL);
         }
@@ -1505,6 +1575,18 @@ async function loadAssets() {
     if (enableLogo) {
         if (logoFile) {
             logoImg = await fileToImageSource(logoFile);
+        } else if (window.customLogoDataURL) {
+            try {
+                logoImg = await urlToImageSource(window.customLogoDataURL);
+            } catch (err) {
+                console.warn("Custom Logo URL failed, auto-fixing:", err);
+                const brokenUrl = window.customLogoDataURL;
+                window.customLogoDataURL = null;
+                logoImg = await urlToImageSource(DEFAULT_LOGO_URL);
+                // Auto-fix: remove broken URL from Firebase
+                autoFixBrokenAssetUrl('customLogoDataURL', brokenUrl);
+                snack("Logo URL lỗi → đã dùng mặc định & tự sửa trên Cloud.", "warn");
+            }
         } else {
             logoImg = await urlToImageSource(DEFAULT_LOGO_URL);
         }
@@ -1513,9 +1595,71 @@ async function loadAssets() {
     }
 
     return true;
+
+}
+
+/**
+ * Auto-fix broken R2 URLs in Firebase.
+ * Removes the broken URL from currentSettings and any matching presets.
+ */
+function autoFixBrokenAssetUrl(fieldName, brokenUrl) {
+    if (!currentUser) return;
+    const uid = currentUser.uid;
+
+    // 1. Clear from currentSettings
+    db.ref(`users/${uid}/currentSettings/${fieldName}`).remove()
+        .then(() => console.log(`Auto-fixed: removed ${fieldName} from currentSettings`))
+        .catch(err => console.warn("Auto-fix currentSettings failed:", err));
+
+    // 2. Clear from any preset that has this broken URL
+    db.ref(`users/${uid}/customPresets`).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        const updates = {};
+        Object.keys(data).forEach(presetId => {
+            const preset = data[presetId];
+            if (preset?.values?.[fieldName] === brokenUrl) {
+                updates[`${presetId}/values/${fieldName}`] = null;
+                console.log(`Auto-fixed: removing ${fieldName} from preset "${preset.name || presetId}"`);
+            }
+        });
+
+        if (Object.keys(updates).length > 0) {
+            db.ref(`users/${uid}/customPresets`).update(updates)
+                .then(() => console.log("Auto-fixed presets in Firebase"))
+                .catch(err => console.warn("Auto-fix presets failed:", err));
+        }
+    }).catch(err => console.warn("Auto-fix preset scan failed:", err));
 }
 
 /* ===== Events: upload ===== */
+// Image custom states for presets
+window.customWMDataURL = null;
+window.customLogoDataURL = null;
+
+$("inWM").addEventListener("change", (e) => {
+    $("enableWatermark").checked = true;
+    window.customWMDataURL = null;
+    if (e.target.files[0]) {
+        const r = new FileReader();
+        r.onload = ev => window.customWMDataURL = ev.target.result;
+        r.readAsDataURL(e.target.files[0]);
+    }
+    updateInteractivePreview();
+});
+
+$("inLogo").addEventListener("change", (e) => {
+    $("enableLogo").checked = true;
+    window.customLogoDataURL = null;
+    if (e.target.files[0]) {
+        const r = new FileReader();
+        r.onload = ev => window.customLogoDataURL = ev.target.result;
+        r.readAsDataURL(e.target.files[0]);
+    }
+    updateInteractivePreview();
+});
+
 $("inPhotos").addEventListener("change", (e) => {
     addFiles(e.target.files, false);
     e.target.value = "";
@@ -1566,6 +1710,7 @@ configIds.forEach((id) => {
         resetOutputs();
         renderOutputThumbs();
         updateKPIs();
+        syncCurrentSettings(); // Added sync to Firebase
     });
 });
 
@@ -1685,49 +1830,669 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
-// Presets
-$("preset1080").addEventListener("click", () => {
-    $("OUT_SIZE").value = 1080;
-    $("BG_BLUR").value = 45;
-    $("BG_SCALE").value = 115;
-    $("LOGO_TARGET_W").value = 160;
-    $("LOGO_MARGIN").value = 28;
-    $("zipName").value = "output_1080_logo_wm.zip";
-    snack(t("preset_1080"), "ok");
-    resetOutputs(); renderOutputThumbs(); updateKPIs();
+// Presets (Removed)
+
+/* ===== Firebase Auth & Sync Logic ===== */
+auth.onAuthStateChanged(user => {
+    currentUser = user;
+    const userProfile = $("userProfile");
+    const btnLogin = $("btnLogin");
+    const loginOverlay = $("loginOverlay");
+
+    if (user) {
+        // Logged In
+        localStorage.setItem("wasLoggedIn", "true");
+        document.body.classList.remove("locked");
+        if (loginOverlay) loginOverlay.classList.add("hidden");
+
+        if (userProfile) userProfile.style.display = "flex";
+        if (btnLogin) btnLogin.style.display = "none";
+        if ($("userAvatar")) $("userAvatar").src = user.photoURL || "";
+        if ($("userName")) {
+            $("userName").textContent = user.displayName || user.email || "User";
+            $("userName").style.display = "inline";
+        }
+        if ($("dropdownEmail")) {
+            $("dropdownEmail").textContent = user.email || "User";
+        }
+
+        // Load custom presets exclusively from DB for this user
+        db.ref(`users/${user.uid}/customPresets`).on('value', snapshot => {
+            const data = snapshot.val();
+            const presets = data ? Object.values(data).filter(p => p && p.id) : [];
+            window._runtimePresets = presets;
+            renderCustomPresets();
+        }, error => {
+            console.error("Firebase customPresets read error:", error);
+            if (error.code === "PERMISSION_DENIED") {
+                alert("Lỗi quyền truy cập Firebase Realtime Database. Vui lòng mở quyền đọc/ghi trên Firebase Rules.");
+            }
+        });
+
+        // Load current Settings from DB
+        isApplyingRemoteSettings = true;
+        db.ref(`users/${user.uid}/currentSettings`).once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                applyCustomPreset({ name: "Cloud Sync", values: data }, true);
+                snack("Đã đồng bộ cài đặt từ Cloud.", "info");
+            }
+            setTimeout(() => { isApplyingRemoteSettings = false; }, 500);
+        }).catch(err => {
+            console.error("Firebase currentSettings read error:", err);
+        });
+
+    } else {
+        // Logged Out
+        localStorage.setItem("wasLoggedIn", "false");
+        document.body.classList.add("locked");
+        if (loginOverlay) loginOverlay.classList.remove("hidden");
+
+        if (userProfile) userProfile.style.display = "none";
+        if (btnLogin) btnLogin.style.display = "inline-flex";
+        if ($("userName")) $("userName").style.display = "none";
+
+        // Clear cached cloud presets
+        window._runtimePresets = [];
+        renderCustomPresets();
+    }
+    
+    if (typeof handleMobileProfile === "function") {
+        handleMobileProfile();
+    }
 });
-$("preset2000").addEventListener("click", () => {
-    $("OUT_SIZE").value = 2000;
-    $("BG_BLUR").value = 45;
-    $("BG_SCALE").value = 115;
-    $("LOGO_TARGET_W").value = 300;
-    $("LOGO_MARGIN").value = 50;
-    $("zipName").value = "output_2000_logo_wm.zip";
-    snack(t("preset_2000"), "ok");
-    resetOutputs(); renderOutputThumbs(); updateKPIs();
+
+function handleLogin() {
+    const btn = $("btnOverlayLogin");
+    if (btn) {
+        btn.innerHTML = '<span class="ms">hourglass_empty</span> Vui lòng chờ...';
+        btn.style.opacity = "0.7";
+        btn.style.pointerEvents = "none";
+    }
+    const btn2 = $("btnLogin");
+    if (btn2) {
+        btn2.style.opacity = "0.7";
+        btn2.style.pointerEvents = "none";
+    }
+
+    // Use signInWithPopup to avoid Permissions policy violation (unload event)
+    auth.signInWithPopup(provider).catch(err => {
+        console.error("Login popup failed", err);
+        if (btn) {
+            btn.innerHTML = '<span class="ms">login</span> Đăng nhập với Google';
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+        }
+        if (btn2) {
+            btn2.style.opacity = "1";
+            btn2.style.pointerEvents = "auto";
+        }
+        snack((I18N[getLang()] || I18N.vi).status_err(err.message), "error");
+    });
+}
+
+// Dropdown Logic
+window.toggleUserDropdown = function(e) {
+    if (e) e.stopPropagation();
+    const dropdown = $("userDropdown");
+    if (dropdown) {
+        const isVisible = dropdown.style.display === "flex";
+        dropdown.style.display = isVisible ? "none" : "flex";
+    }
+};
+
+document.addEventListener("click", () => {
+    const dropdown = $("userDropdown");
+    if (dropdown && dropdown.style.display === "flex") {
+        dropdown.style.display = "none";
+    }
 });
-$("preset1350").addEventListener("click", () => {
-    $("OUT_SIZE").value = 1350;
-    $("BG_BLUR").value = 55;
-    $("BG_SCALE").value = 118;
-    $("LOGO_TARGET_W").value = 190;
-    $("LOGO_MARGIN").value = 32;
-    $("zipName").value = "output_1350_logo_wm.zip";
-    snack(t("preset_1350"), "ok");
-    resetOutputs(); renderOutputThumbs(); updateKPIs();
+
+$("btnTriggerLogout")?.addEventListener("click", () => {
+    $("btnLogout")?.click();
 });
-$("presetSoft").addEventListener("click", () => {
-    $("BG_BLUR").value = Math.max(25, (+$("BG_BLUR").value || 45) - 10);
-    $("BG_SCALE").value = 112;
-    snack(t("blur_softer"), "ok");
-    resetOutputs(); renderOutputThumbs(); updateKPIs();
+
+$("btnLogin")?.addEventListener("click", handleLogin);
+$("btnOverlayLogin")?.addEventListener("click", handleLogin);
+
+$("btnLogout")?.addEventListener("click", () => {
+    showConfirmModal(
+        "Đăng xuất",
+        "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?",
+        "Đăng xuất",
+        "logout",
+        false,
+        () => {
+            localStorage.setItem("wasLoggedIn", "false");
+            auth.signOut().then(() => snack((I18N[getLang()] || I18N.vi).logout + " OK", "ok"));
+        }
+    );
 });
-$("presetStrong").addEventListener("click", () => {
-    $("BG_BLUR").value = Math.min(90, (+$("BG_BLUR").value || 45) + 15);
-    $("BG_SCALE").value = 118;
-    snack(t("blur_stronger"), "ok");
-    resetOutputs(); renderOutputThumbs(); updateKPIs();
+
+
+// Relocating profile to mobile dock on small screens
+function handleMobileProfile() {
+    const profile = $("userProfile");
+    const login = $("btnLogin");
+    const dock = document.querySelector(".mobileDock");
+    const cluster = document.querySelector(".actions-cluster");
+
+    if (!profile || !dock || !cluster) return;
+
+    if (window.innerWidth <= 768) {
+        if (profile.parentElement !== dock) {
+            dock.prepend(login);
+            dock.prepend(profile);
+        }
+    } else {
+        if (profile.parentElement !== cluster) {
+            cluster.prepend(login);
+            cluster.prepend(profile);
+        }
+    }
+}
+
+// Relocating custom presets to top on mobile
+function handleMobilePresets() {
+    const presetContainer = $("customPresetContainer");
+    const grid = document.querySelector(".grid");
+    const settingsCardBody = document.querySelector(".card:not(#customPresetCard) > .cardBody"); 
+    // Wait, the settings card is the second .card in .grid (or first if no customPresetCard).
+    // Let's explicitly find the settings card body by checking its preceding header.
+    const settingsCard = Array.from(document.querySelectorAll('.card')).find(card => card.querySelector('[data-i18n="settings"]'));
+    if (!settingsCard) return;
+    const sBody = settingsCard.querySelector('.cardBody');
+
+    if (!presetContainer || !grid || !sBody) return;
+
+    if (window.innerWidth <= 768) {
+        // Move to top of grid
+        if (presetContainer.parentElement !== grid) {
+            grid.insertBefore(presetContainer, grid.firstChild);
+        }
+    } else {
+        // Move back to settings card body (at the very beginning)
+        if (presetContainer.parentElement !== sBody) {
+            sBody.insertBefore(presetContainer, sBody.firstChild);
+        }
+    }
+}
+
+window.addEventListener("resize", () => {
+    handleMobileProfile();
+    handleMobilePresets();
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    handleMobileProfile();
+    handleMobilePresets();
+});
+// Initial check during auth render setup
+const origAuthObserver = auth.onAuthStateChanged;
+
+/* ===== Custom Presets Logic ===== */
+window._runtimePresets = [];
+
+const CUSTOM_PRESET_KEYS = [
+    "OUT_FORMAT", "JPG_QUALITY", "OUT_SIZE", "BG_BLUR", "BG_SCALE",
+    "WM_OPACITY", "WM_POSITION", "WM_TARGET_W", "WM_X", "WM_Y", "LOGO_TARGET_W", "LOGO_MARGIN", "LOGO_PLATE_PADDING",
+    "LOGO_PLATE_BLUR", "LOGO_PLATE_OPACITY", "LOGO_PLATE_COLOR",
+    "enableWatermark", "enableLogo", "enablePlate",
+    "LOGO_POSITION", "enableTextWM",
+    "wmText", "wmTextSize", "wmTextOpacity", "wmTextColor", "wmTextRepeats", "wmTextFont", "wmTextWeight"
+];
+
+function getCustomPresets() {
+    return window._runtimePresets || [];
+}
+
+const R2_WORKER_URL = "https://r2-uploader.insertwatermark.workers.dev"; // Cloudflare R2 Uploader Endpoint
+
+async function uploadBase64ToR2(base64Data, filename) {
+    if (!currentUser) return null;
+    const token = await currentUser.getIdToken();
+    try {
+        const response = await fetch(R2_WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                image: base64Data,
+                filename: filename
+            })
+        });
+
+        const text = await response.text();
+        let result = null;
+        try {
+            result = JSON.parse(text);
+        } catch (parseErr) {
+            console.error("Non-JSON Response from R2 Worker:", response.status, text);
+            alert(`Cloudflare R2 Server Error (${response.status}):\n\n${text.substring(0, 200)}...`);
+            return null;
+        }
+
+        if (response.ok && result.success) {
+            return result.url;
+        } else {
+            console.error("R2 Upload Application Error:", result);
+            alert(`Lỗi ứng dụng R2: ${result.error || JSON.stringify(result)}`);
+            return null;
+        }
+    } catch (e) {
+        console.error("Failed to fetch R2 Worker", e);
+        alert(`Lỗi kết nối hoặc kích thước ảnh quá lớn:\n\n${e.message}`);
+        return null;
+    }
+}
+
+async function deleteR2Asset(url) {
+    if (!currentUser || !url || !url.includes("r2.dev")) return false;
+    const token = await currentUser.getIdToken();
+    try {
+        const response = await fetch(R2_WORKER_URL, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: url })
+        });
+        const result = await response.json();
+        return result.success;
+    } catch (e) {
+        console.warn("Failed to delete R2 asset:", e);
+        return false;
+    }
+}
+
+function isAssetInUse(url, excludePresetId = null) {
+    if (!url) return false;
+    const presets = getCustomPresets();
+    for (const p of presets) {
+        if (p.id === excludePresetId) continue;
+        if (p.values.customLogoDataURL === url || p.values.customWMDataURL === url) return true;
+    }
+    return false;
+}
+
+async function saveCustomPresets(presets) {
+    if (!currentUser) return;
+
+    // Check for base64 images and upload to R2 before saving
+    try {
+        for (let i = 0; i < presets.length; i++) {
+            const preset = presets[i];
+
+            if (preset.values.customWMDataURL && preset.values.customWMDataURL.startsWith("data:image")) {
+                const ext = preset.values.customWMDataURL.indexOf("image/jpeg") > -1 ? "jpg" : "png";
+                snack("Đang tải hình nền lên Cloud...", "info");
+                const publicUrl = await uploadBase64ToR2(preset.values.customWMDataURL, `watermark_${preset.id}.${ext}`);
+                if (publicUrl) preset.values.customWMDataURL = publicUrl;
+            }
+
+            if (preset.values.customLogoDataURL && preset.values.customLogoDataURL.startsWith("data:image")) {
+                const ext = preset.values.customLogoDataURL.indexOf("image/jpeg") > -1 ? "jpg" : "png";
+                snack("Đang tải Logo lên Cloud...", "info");
+                const publicUrl = await uploadBase64ToR2(preset.values.customLogoDataURL, `logo_${preset.id}.${ext}`);
+                if (publicUrl) preset.values.customLogoDataURL = publicUrl;
+                else throw new Error("Cloudflare R2 Upload Failed for Logo");
+            }
+        }
+    } catch (e) {
+        console.error("Process image errors", e);
+        alert("Lỗi tải ảnh lên Cloudflare R2: " + e.message);
+        return false;
+    }
+
+    window._runtimePresets = presets;
+    try {
+        const updates = {};
+        presets.forEach(p => { updates[p.id] = p; });
+        db.ref(`users/${currentUser.uid}/customPresets`).set(updates).catch(err => {
+            console.error("Firebase saveCustomPresets error:", err);
+            if (err.code === "PERMISSION_DENIED") {
+                alert("Không thể lưu Preset lên Cloud do chưa thiết lập quyền Firebase Realtime Database Rules. Vui lòng cập nhật Rule Firebase.");
+            }
+        });
+    } catch (e) {
+        console.error("Failed to save custom presets", e);
+        return false;
+    }
+    return true;
+}
+
+function renderCustomPresets() {
+    const presets = getCustomPresets();
+    const container = $("customPresetList");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    presets.forEach(preset => {
+        const card = document.createElement("div");
+        card.className = "preset-card";
+        card.addEventListener("click", () => applyCustomPreset(preset));
+
+        // Logo
+        if (preset.values.enableLogo && preset.values.customLogoDataURL) {
+            const img = document.createElement("img");
+            img.className = "preset-logo";
+            img.src = preset.values.customLogoDataURL;
+            img.alt = preset.name;
+            // Handle loading errors gracefully
+            img.onerror = () => {
+                img.style.display = 'none';
+                if (!card.querySelector('.preset-logo-fallback')) {
+                    const fb = document.createElement("div");
+                    fb.className = "preset-logo-fallback";
+                    fb.innerHTML = '<span class="ms">image_not_supported</span>';
+                    card.insertBefore(fb, card.firstChild);
+                }
+            };
+            card.appendChild(img);
+        } else {
+            // Fallback logo if logo is disabled or missing
+            const fallback = document.createElement("div");
+            fallback.className = "preset-logo-fallback";
+            fallback.innerHTML = `<span class="ms">image</span>`;
+            card.appendChild(fallback);
+        }
+
+        // Name
+        const nameEl = document.createElement("div");
+        nameEl.className = "preset-name";
+        nameEl.textContent = preset.name;
+        card.appendChild(nameEl);
+
+        // Watermark Text (Subtitle)
+        if (preset.values.enableTextWM && preset.values.wmText) {
+            const wmEl = document.createElement("div");
+            wmEl.className = "preset-wm";
+            wmEl.textContent = `(${preset.values.wmText})`;
+            card.appendChild(wmEl);
+        }
+
+        // Delete Button
+        const delBtn = document.createElement("button");
+        delBtn.className = "preset-delete";
+        delBtn.type = "button";
+        delBtn.innerHTML = '<span class="ms">delete</span>';
+        delBtn.title = t("clear") || "Xóa";
+        delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteCustomPreset(preset.id);
+        });
+        card.appendChild(delBtn);
+
+        container.appendChild(card);
+    });
+}
+
+function applyCustomPreset(preset, silent = false) {
+    if (!preset || !preset.values) return;
+
+    // Apply image base64 if available
+    if (preset.values.customWMDataURL) {
+        window.customWMDataURL = preset.values.customWMDataURL;
+        if ($("inWM")) $("inWM").value = "";
+    } else {
+        window.customWMDataURL = null;
+    }
+
+    if (preset.values.customLogoDataURL) {
+        window.customLogoDataURL = preset.values.customLogoDataURL;
+        if ($("inLogo")) $("inLogo").value = "";
+    } else {
+        window.customLogoDataURL = null;
+    }
+
+    CUSTOM_PRESET_KEYS.forEach(key => {
+        const el = $(key);
+        if (el && preset.values[key] !== undefined) {
+            if (el.type === "checkbox") {
+                el.checked = preset.values[key];
+            } else {
+                el.value = preset.values[key];
+            }
+        }
+    });
+
+    const textWmOn = $("enableTextWM")?.checked;
+    if ($("textWmSettings")) $("textWmSettings").style.display = textWmOn ? "block" : "none";
+    if (textWmOn && $("enableWatermark")) $("enableWatermark").checked = false;
+
+    if (!silent) snack(`Đã áp dụng: ${preset.name}`, "ok");
+    resetOutputs();
+    renderOutputThumbs();
+    updateKPIs();
+}
+
+function showConfirmModal(title, desc, okText, okIcon, isDanger, onConfirm, altInfo = null) {
+    const modal = $("confirmActionModal");
+    if (!modal) return;
+    
+    $("confirmActionTitle").innerText = title;
+    $("confirmActionDesc").innerHTML = desc;
+    $("confirmActionOkText").innerText = okText;
+    $("confirmActionIcon").innerText = okIcon;
+    
+    const btnOk = $("btnConfirmActionOk");
+    if (isDanger) btnOk.classList.add("error");
+    else btnOk.classList.remove("error");
+    
+    const btnAlt = $("btnConfirmActionAlt");
+    if (altInfo) {
+        $("confirmActionAltText").innerText = altInfo.text;
+        $("confirmActionAltIcon").innerText = altInfo.icon;
+        btnAlt.style.display = "flex";
+    } else {
+        btnAlt.style.display = "none";
+    }
+    
+    // remove previous listeners by cloning
+    const btnCancel = $("btnConfirmActionCancel");
+    const newBtnCancel = btnCancel.cloneNode(true);
+    btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+    
+    const btnClose = $("btnConfirmActionClose");
+    const newBtnClose = btnClose.cloneNode(true);
+    btnClose.parentNode.replaceChild(newBtnClose, btnClose);
+    
+    const newBtnOk = btnOk.cloneNode(true);
+    btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+    
+    const newBtnAlt = btnAlt.cloneNode(true);
+    btnAlt.parentNode.replaceChild(newBtnAlt, btnAlt);
+    
+    modal.classList.add("show");
+    
+    const close = () => modal.classList.remove("show");
+    
+    newBtnClose.onclick = close;
+    newBtnCancel.onclick = close;
+    
+    newBtnOk.onclick = () => {
+        close();
+        if (onConfirm) onConfirm();
+    };
+    
+    newBtnAlt.onclick = () => {
+        close();
+        if (altInfo && altInfo.onAlt) altInfo.onAlt();
+    }
+}
+
+function deleteCustomPreset(id) {
+    if (!currentUser) return;
+    
+    showConfirmModal(
+        "Xóa Preset",
+        "Bạn có chắc chắn muốn xóa preset này? Hành động này không thể hoàn tác.",
+        "Xóa",
+        "delete",
+        true,
+        () => {
+            let presets = getCustomPresets();
+            const pToDelete = presets.find(p => p.id === id);
+            presets = presets.filter(p => p.id !== id);
+            window._runtimePresets = presets;
+
+            try {
+                db.ref(`users/${currentUser.uid}/customPresets/${id}`).remove();
+                
+                // Cleanup orphaned R2 images safely
+                if (pToDelete) {
+                    const l = pToDelete.values.customLogoDataURL;
+                    const w = pToDelete.values.customWMDataURL;
+                    if (l && !isAssetInUse(l, id)) deleteR2Asset(l);
+                    if (w && !isAssetInUse(w, id)) deleteR2Asset(w);
+                }
+            } catch (e) { }
+
+            renderCustomPresets();
+            snack(t("snack_cleared"), "info");
+        }
+    );
+}
+
+$("btnSavePreset")?.addEventListener("click", async () => {
+    if (!currentUser) {
+        snack("Vui lòng đăng nhập để lưu preset", "warn");
+        const loginOverlay = $("loginOverlay");
+        if (loginOverlay) loginOverlay.classList.remove("hidden");
+        return;
+    }
+
+    const nameInput = $("customPresetName");
+    const name = nameInput.value.trim();
+    if (!name) { snack("Vui lòng nhập tên preset", "warn"); return; }
+
+    const savePresetData = async (presetObj, presetsList, successMsg) => {
+        $("btnSavePreset").disabled = true;
+        if ($("dockSavePreset")) $("dockSavePreset").disabled = true;
+        try {
+            const presetsToSave = JSON.parse(JSON.stringify(presetsList));
+            // if we are adding new, it's not in the list yet
+            if (!presetsToSave.find(p => p.id === presetObj.id)) {
+                presetsToSave.push(presetObj);
+            } else {
+                // overwrite existing
+                const idx = presetsToSave.findIndex(p => p.id === presetObj.id);
+                if (idx !== -1) {
+                    const oldLogo = presetsToSave[idx].values.customLogoDataURL;
+                    const oldWM = presetsToSave[idx].values.customWMDataURL;
+                    
+                    presetsToSave[idx] = presetObj;
+                    
+                    // Cleanup overwritten assets if they are no longer in use
+                    if (oldLogo && oldLogo !== presetObj.values.customLogoDataURL && !isAssetInUse(oldLogo, presetObj.id)) {
+                        deleteR2Asset(oldLogo);
+                    }
+                    if (oldWM && oldWM !== presetObj.values.customWMDataURL && !isAssetInUse(oldWM, presetObj.id)) {
+                        deleteR2Asset(oldWM);
+                    }
+                }
+            }
+            
+            const success = await saveCustomPresets(presetsToSave);
+            if (success) {
+                nameInput.value = "";
+                renderCustomPresets();
+                snack(successMsg, "ok");
+            }
+        } finally {
+            $("btnSavePreset").disabled = false;
+            if ($("dockSavePreset")) $("dockSavePreset").disabled = false;
+        }
+    };
+
+    const values = {};
+    CUSTOM_PRESET_KEYS.forEach(key => {
+        const el = $(key);
+        if (el) values[key] = el.type === "checkbox" ? el.checked : el.value;
+    });
+
+    if (window.customWMDataURL) values.customWMDataURL = window.customWMDataURL;
+    if (window.customLogoDataURL) values.customLogoDataURL = window.customLogoDataURL;
+
+    const currentPresets = getCustomPresets();
+    const existing = currentPresets.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+    if (existing) {
+        showConfirmModal(
+            "Trùng tên Preset",
+            `Đã có một Preset mang tên "<b>${name}</b>".<br>Bạn muốn ghi đè lên bộ cũ hay tạo một bộ hoàn toàn mới?`,
+            "Ghi đè (Sửa cũ)",
+            "save",
+            false,
+            () => { // onConfirm: Overwrite
+                const updatedPreset = {
+                    id: existing.id,
+                    name: existing.name,
+                    values: Object.assign({}, values)
+                };
+                const msg = `Đã cập nhật preset: ${name}`;
+                savePresetData(updatedPreset, currentPresets, msg);
+            },
+            { // altInfo: Save New
+                text: "Tạo mới (Bản sao)",
+                icon: "add",
+                onAlt: () => {
+                    let newName = `${name} (1)`;
+                    let counter = 1;
+                    while (currentPresets.find(p => p.name.toLowerCase() === newName.toLowerCase())) {
+                        counter++;
+                        newName = `${name} (${counter})`;
+                    }
+                    const newPreset = {
+                        id: "preset_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+                        name: newName,
+                        values: values
+                    };
+                    savePresetData(newPreset, currentPresets, `Đã lưu bản sao: ${newName}`);
+                }
+            }
+        );
+    } else {
+        const newPreset = {
+            id: "preset_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+            name: name,
+            values: values
+        };
+        savePresetData(newPreset, currentPresets, `Đã lưu preset: ${name}`);
+    }
+});
+
+$("dockSavePreset")?.addEventListener("click", () => {
+    $("btnSavePreset")?.click();
+});
+
+// Auto Sync Current Settings
+let syncTimeout = null;
+function syncCurrentSettings() {
+    if (isApplyingRemoteSettings || !currentUser) return;
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        const values = {};
+        CUSTOM_PRESET_KEYS.forEach(key => {
+            const el = $(key);
+            if (el) values[key] = el.type === "checkbox" ? el.checked : el.value;
+        });
+
+        // ONLY sync URL-based images to currentSettings to avoid crashing Firebase with huge Base64 strings
+        if (window.customWMDataURL && !window.customWMDataURL.startsWith("data:image")) {
+            values.customWMDataURL = window.customWMDataURL;
+        }
+        if (window.customLogoDataURL && !window.customLogoDataURL.startsWith("data:image")) {
+            values.customLogoDataURL = window.customLogoDataURL;
+        }
+
+        db.ref(`users/${currentUser.uid}/currentSettings`).set(values).catch(console.error);
+    }, 1000);
+}
 
 /* ===== Theme / Lang buttons ===== */
 $("btnTheme").addEventListener("click", cycleTheme);
@@ -1748,12 +2513,25 @@ document.querySelectorAll("[data-lang-pick]").forEach(btn => {
 });
 
 /* ===== Mobile dock ===== */
-$("dockUpload").addEventListener("click", () => {
-    // window.scrollTo({ top: 0, behavior: "smooth" }); // Old behavior
-    $("inPhotos").click(); // Trigger file upload
+document.querySelectorAll(".mobileDock .dockBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        // Toggle active class
+        document.querySelectorAll(".mobileDock .dockBtn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        // Execute corresponding action
+        const id = btn.id;
+        if (id === "dockUpload") {
+             $("inPhotos")?.click();
+        } else if (id === "dockPreview") {
+             $("btnLivePreview")?.click();
+        } else if (id === "dockSavePreset") {
+             $("btnSavePreset")?.click();
+        } else if (id === "dockRun") {
+             if (!$("btnRun2")?.disabled) runBatch();
+        }
+    });
 });
-// Dock Settings removed as inline
-$("dockRun").addEventListener("click", () => { if (!$("btnRun2").disabled) runBatch(); });
 
 /* ===== Main PROCESS ===== */
 async function runBatch() {
@@ -1919,13 +2697,21 @@ document.addEventListener("keydown", (e) => {
     const btnPrev = $("btnLivePreview");
     if (btnPrev) {
         console.log("Attaching Live Preview listener");
-        btnPrev.addEventListener("click", () => {
+        btnPrev.addEventListener("click", async () => {
             console.log("Live Preview Clicked");
-            previewFirstItem();
+            try {
+                await previewFirstItem();
+            } catch (err) {
+                console.error("Live Preview error:", err);
+                snack("Lỗi xem trước: " + (err?.message || String(err)), "err");
+            }
         });
     } else {
         console.error("btnLivePreview not found in init");
     }
+
+    // Render custom presets on load
+    renderCustomPresets();
 })();
 
 /* ============== StackBlur Algorithm (Fast Gaussian Blur) for Safari ============== */

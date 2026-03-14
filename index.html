@@ -33,6 +33,46 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Montserrat:wght@300;400;500&family=Outfit:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" />
   <!-- Main CSS -->
   <link rel="stylesheet" href="./assets/css/style.css" />
+  <style>
+    @media (max-width: 768px) {
+      .mobileDock #userDropdown {
+        top: auto !important;
+        bottom: calc(100% + 14px) !important;
+        right: auto !important;
+        left: -10px !important;
+        transform-origin: bottom left !important;
+      }
+      .mobileDock {
+        display: flex;
+        justify-content: space-between;
+        gap: 4px !important;
+      }
+      
+      .mobileDock > * {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 !important;
+      }
+
+      .mobileDock #userProfile {
+        min-height: 44px;
+        padding: 6px 10px !important;
+        margin: 0;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      .mobileDock #userName {
+        display: none !important; /* Hide name on mobile dock to save space */
+      }
+      .mobileDock .ms {
+        font-size: 16px !important; /* expand icon smaller */
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -53,15 +93,57 @@
         </div>
 
         <div class="topActions">
-          <button class="btn mini" id="btnTheme" type="button" title="Theme">
-            <span class="ms" id="themeIcon">brightness_auto</span>
-            <span data-i18n="theme">Giao diện</span>
-          </button>
+          <div class="actions-cluster" style="display:flex; align-items:center; gap:8px; padding:6px; background:transparent;">
+            <!-- Firebase Auth UI -->
+            <div id="userProfile" style="display:none; position:relative; align-items:center; gap:8px; padding:4px 8px 4px 4px; border-radius:40px; border:1px solid var(--border); background:var(--panel); cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="toggleUserDropdown(event)">
+              <img id="userAvatar" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid var(--border);" alt="Avatar">
+              <span id="userName" style="font-size:14px; font-weight:700; display:none; letter-spacing:0.3px;"></span>
+              <span class="ms" style="font-size:18px; color:var(--textFade);">expand_more</span>
+              
+              <!-- Dropdown Menu -->
+              <div id="userDropdown" style="display:none; position:absolute; top:52px; right:0; background:var(--panel); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); border:1px solid var(--line); border-radius:18px; box-shadow:0 12px 48px rgba(0,0,0,0.5); min-width:280px; z-index:100; flex-direction:column; padding:10px; cursor:default;" onclick="event.stopPropagation()">
+                
+                <div style="padding:12px 14px; border-bottom:1px solid var(--line); margin-bottom:6px;">
+                  <div style="font-size:13px; color:var(--textFade); margin-bottom:6px;">Tài khoản của bạn</div>
+                  <div id="dropdownEmail" style="font-size:15px; font-weight:700; word-break:break-word;"></div>
+                </div>
 
-          <button class="btn mini" id="btnLang" type="button" title="Language">
-            <span class="ms">translate</span>
-            <span id="langLabel">VI</span>
-          </button>
+                <div class="dropdown-item" id="btnTheme" style="padding:12px 14px; display:flex; align-items:center; gap:12px; border-radius:12px; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                  <span class="ms" id="themeIcon" style="font-size: 22px;">brightness_auto</span>
+                  <span data-i18n="theme" style="font-weight:600; font-size:15px;">Theme</span>
+                </div>
+
+                <div class="dropdown-item" id="btnLang" style="padding:12px 14px; display:flex; align-items:center; gap:12px; border-radius:12px; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                  <span class="ms" style="font-size: 22px;">translate</span>
+                  <span id="langLabel" style="font-weight:600; font-size:15px;">EN</span>
+                </div>
+
+                <div style="height:1px; background:var(--line); margin:6px 0;"></div>
+
+                <div class="dropdown-item" style="padding:12px 14px; display:flex; align-items:center; gap:12px; border-radius:12px; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                  <span class="ms" style="font-size: 22px;">manage_accounts</span>
+                  <span style="font-weight:600; font-size:15px;">Cài đặt (Sắp có)</span>
+                </div>
+
+                <div class="dropdown-item" id="btnTriggerLogout" style="padding:12px 14px; display:flex; align-items:center; gap:12px; border-radius:12px; cursor:pointer; color:#ff4d4f; transition:background 0.2s;" onmouseover="this.style.background='rgba(255, 77, 79, 0.1)'" onmouseout="this.style.background='transparent'">
+                  <span class="ms" style="font-size: 22px;">logout</span>
+                  <span style="font-weight:700; font-size:15px;">Đăng xuất</span>
+                </div>
+                <!-- Hidden real logout button bounded by auth logic -->
+                <button class="srOnly" id="btnLogout"></button>
+              </div>
+            </div>
+            
+            <button class="btn mini primary" id="btnLogin" type="button" title="Đăng nhập Google" style="border-radius:50px;">
+              <script>
+                if (localStorage.getItem("wasLoggedIn") === "true") {
+                  document.getElementById("btnLogin").style.display = "none";
+                }
+              </script>
+              <span class="ms">login</span>
+              <span data-i18n="login">Đăng nhập</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -71,13 +153,10 @@
       <div class="card">
         <div class="cardHead">
           <div>
-            <h2><span class="ms">cloud_upload</span> <span data-i18n="input_title">Ảnh gốc (Preview bên trên)</span>
+            <h2><span class="ms">cloud_upload</span> <span data-i18n="input_title">Ảnh gốc</span>
             </h2>
             <div class="desc" data-i18n="input_desc">
-              Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục + tên + số lượng ảnh.
-              <br><b>Mặc định:</b> logo + watermark sẽ lấy từ <code>./assets/logo/logo.png</code> và
-              <code>./assets/watermark/watermark.png</code>
-              (có thể chọn lại trong Cài đặt để override).
+              <br>Chọn nhiều lần để cộng dồn ảnh. Nếu chọn thư mục → chỉ hiện icon thư mục nhưng lúc Xử lý sẽ phân loại ảnh.
             </div>
           </div>
         </div>
@@ -156,23 +235,24 @@
 
 
 
-          <div class="section" style="margin-bottom:12px;">
-            <div
-              style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
-              <span class="ms">bolt</span> <span data-i18n="preset">Preset nhanh</span>
-            </div>
-            <div style="padding:12px;">
-              <div class="seg">
-                <button class="chip" type="button" id="preset1080"><span class="ms sm">auto_awesome</span> 1080 • Blur
-                  45</button>
-                <button class="chip" type="button" id="preset2000"><span class="ms sm">high_quality</span> 2000 • Blur
-                  45</button>
-                <button class="chip" type="button" id="preset1350"><span class="ms sm">crop_square</span> 1350 • Blur
-                  55</button>
-                <button class="chip" type="button" id="presetSoft"><span class="ms sm">blur_on</span> <span
-                    data-i18n="blur_soft">Blur mềm</span></button>
-                <button class="chip" type="button" id="presetStrong"><span class="ms sm">blur_circular</span> <span
-                    data-i18n="blur_strong">Blur mạnh</span></button>
+          <!-- NEW: Custom Preset Section -->
+          <div id="customPresetContainer">
+            <div class="section" style="margin-bottom:12px;">
+              <div
+                style="padding:12px 12px; border-bottom:1px solid var(--line); font-weight:900; display:flex; gap:10px; align-items:center;">
+                <span class="ms">favorite</span> <span data-i18n="custom_preset">Các mẫu của tôi</span>
+              </div>
+              <div style="padding:12px;">
+                <div class="row" style="margin-bottom: 10px;">
+                  <input id="customPresetName" class="field" type="text" placeholder="Tên preset..."
+                    data-i18n-placeholder="preset_name">
+                  <button class="btn primary" id="btnSavePreset" type="button" style="justify-content:center;">
+                    <span class="ms">save</span> <span data-i18n="save_preset">Lưu Preset</span>
+                  </button>
+                </div>
+                <div class="seg" id="customPresetList">
+                  <!-- Custom presets will be rendered here dynamically -->
+                </div>
               </div>
             </div>
           </div>
@@ -274,11 +354,11 @@
 
               <div class="row" style="margin-top:10px">
                 <div>
-                  <label data-i18n="wm_file">Watermark PNG overlay (mặc định: ./assets/watermark/watermark.png)</label>
+                  <label data-i18n="wm_file">Watermark PNG overlay</label>
                   <input id="inWM" class="field" type="file" accept="image/png" />
                 </div>
                 <div>
-                  <label data-i18n="logo_file">Logo PNG (mặc định: ./assets/logo/logo.png)</label>
+                  <label data-i18n="logo_file">Logo PNG</label>
                   <input id="inLogo" class="field" type="file" accept="image/png" />
                 </div>
               </div>
@@ -447,8 +527,7 @@
         <div class="card resultCard">
           <div class="cardHead">
             <div>
-              <h2><span class="ms">gallery_thumbnail</span> <span data-i18n="out_title">Kết quả (Preview bên
-                  dưới)</span>
+              <h2><span class="ms">gallery_thumbnail</span> <span data-i18n="out_title">Kết quả</span>
               </h2>
               <div class="desc" data-i18n="out_desc">Chỉ hiện ảnh kết quả sau khi xử lý. Có tải lẻ / tải đã chọn / ZIP.
               </div>
@@ -522,7 +601,17 @@
       <span class="dockLab" data-i18n="dock_upload">Upload</span>
     </button>
 
-    <button class="dockBtn primary" id="dockRun">
+    <button class="dockBtn" id="dockPreview">
+      <span class="ms">visibility</span>
+      <span class="dockLab" data-i18n="dock_preview">Xem thử</span>
+    </button>
+
+    <button class="dockBtn" id="dockSavePreset">
+      <span class="ms">save</span>
+      <span class="dockLab" data-i18n="save_preset">Lưu Preset</span>
+    </button>
+
+    <button class="dockBtn" id="dockRun">
       <span class="ms">auto_fix_high</span>
       <span class="dockLab" data-i18n="dock_process">Xử lý</span>
     </button>
@@ -585,6 +674,33 @@
     </div>
   </div>
 
+  <!-- Generic Confirm Modal -->
+  <div class="modal" id="confirmActionModal" aria-hidden="true" style="z-index: 9999;">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Xác nhận" style="max-width: 400px; margin: auto; border-radius: 12px; height: auto;">
+      <div class="sheetHead">
+        <div class="ttl" id="confirmActionTitle">Xác nhận</div>
+        <button class="btn mini" id="btnConfirmActionClose" type="button"><span class="ms">close</span></button>
+      </div>
+      <div class="sheetBody">
+        <div style="padding: 16px; font-size: 15px; color: var(--textFade);" id="confirmActionDesc">
+          Bạn có chắc chắn muốn thực hiện hành động này?
+        </div>
+        <div class="stickyFooter" style="display:flex; gap:10px; justify-content: flex-end; padding-top: 16px;">
+          <button class="btn" id="btnConfirmActionCancel" type="button" style="flex:1; justify-content:center;">
+             Huỷ
+          </button>
+          <button class="btn primary outline" id="btnConfirmActionAlt" type="button" style="flex:1; justify-content:center; display:none;">
+             <span class="ms" id="confirmActionAltIcon">add</span> <span id="confirmActionAltText">Lưu mới</span>
+          </button>
+          <button class="btn primary error" id="btnConfirmActionOk" type="button" style="flex:1; justify-content:center;">
+             <span class="ms" id="confirmActionIcon">delete</span> <span id="confirmActionOkText">Xoá</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Image Preview Modal (Lightbox + Interactive Logo) -->
   <div class="modal" id="previewModal" aria-hidden="true">
     <div class="previewOverlay" id="previewOverlay">
@@ -609,11 +725,34 @@
     </div>
   </div>
 
+  <!-- Login Enforcement Overlay -->
+  <div id="loginOverlay" class="login-overlay">
+    <script>
+      if (localStorage.getItem("wasLoggedIn") === "true") {
+        document.getElementById("loginOverlay").classList.add("hidden");
+      }
+    </script>
+    <div class="login-card">
+      <h2 style="margin-top:0;">Đăng nhập để sử dụng</h2>
+      <p style="color:var(--textFade); margin-bottom:24px;">Bạn cần đăng nhập bằng tài khoản Google để sử dụng công cụ
+        Batch Ảnh. Mọi Preset của bạn sẽ lưu độc lập trên mây.</p>
+      <button class="btn primary" id="btnOverlayLogin" type="button"
+        style="width:100%; justify-content:center; padding:16px; font-size:16px;">
+        <span class="ms">login</span> Đăng nhập với Google
+      </button>
+    </div>
+  </div>
+
   <!-- JSZip (bắt buộc cho ZIP). FileSaver giữ lại nhưng đã có fallback Safari -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <!-- HEIC to JPG converter for iPhone photos -->
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <div class="snackbar" id="snack">
     <div class="msg" id="snackMsg"><span class="ms sm">info</span><span>…</span></div>

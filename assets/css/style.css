@@ -940,69 +940,120 @@
 
     .mobileDock {
       position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: auto;
-      min-height: 70px;
-      background: var(--panel2);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--line);
-      box-shadow: 0 -4px 30px rgba(0, 0, 0, .25);
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: max(20px, env(safe-area-inset-bottom));
+      height: 72px;
       z-index: 95;
       display: none;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-      gap: 10px;
+      padding: 6px; /* Spacing for the floating container */
+      gap: 4px;
+      /* Unified modern translucent bar */
+      background: var(--panel);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      width: 92%;
+      max-width: 480px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
     }
 
     .dockBtn {
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .06);
-      color: var(--txt);
+      position: relative; 
+      background: transparent;
+      border: none;
+      color: var(--muted);
       display: flex;
-      flex-direction: column;
+      flex-direction: column; 
       align-items: center;
       justify-content: center;
-      gap: 3px;
-      padding: 10px 16px;
-      border-radius: 14px;
+      padding: 0;
+      flex: 1; /* Equal width for all buttons */
+      height: 100%;
+      border-radius: 32px; /* Pill shape for oval highlight */
       cursor: pointer;
-      flex: 1;
-      max-width: 140px;
-      transition: transform .1s ease, background .2s ease, border-color .2s ease;
-      min-height: 52px;
+      transition: all .2s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .dockBtn:hover {
-      background: rgba(255, 255, 255, .10);
-    }
-
-    .dockBtn:active {
-      transform: scale(.96);
-      background: rgba(255, 255, 255, .12);
-    }
-
     .dockBtn .ms {
-      font-size: 22px;
+      font-size: 28px; 
+      transition: transform 0.2s ease;
     }
 
     .dockLab {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
-    .dockBtn.primary {
-      background: linear-gradient(135deg, var(--accentA), var(--accentB));
-      border-color: var(--accentLine);
-    }
-
-    .dockBtn.primary .dockLab {
+      position: absolute;
+      bottom: calc(100% + 12px); /* Position above the button */
+      left: 50%;
+      transform: translateX(-50%) translateY(5px);
+      background: var(--surface);
       color: var(--txt);
+      border: 1px solid var(--line);
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      pointer-events: none; /* Tooltip shouldn't capture clicks */
+    }
+    
+    /* Show tooltip only on hover */
+    .dockBtn:hover .dockLab {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .dockBtn:hover {
+       color: var(--txt);
+       background: var(--accentB);
+    }
+
+    .dockBtn.active {
+      color: var(--primary);
+    }
+    
+    .dockBtn.active::before,
+    .dockBtn:hover::before {
+      content: '';
+      position: absolute;
+      inset: 8px; /* Padding for the bubble effect */
+      border-radius: 32px;
+      z-index: -1;
+      transition: all .2s ease;
+    }
+
+    .dockBtn.active::before {
+      background: var(--accentA);
+    }
+    
+    .dockBtn:hover::before {
+      background: var(--accentB);
+    }
+    
+    .dockBtn.active .ms {
+      transform: translateY(-2px);
+    }
+
+    /* Simple indicator dash */
+    .dockBtn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 10px;
     }
 
 
@@ -1435,22 +1486,8 @@
     /* --- Landscape Phone Optimizations --- */
     @media (max-height: 500px) and (orientation: landscape) {
       .mobileDock {
-        height: 56px;
-        min-height: 56px;
-        padding: 8px 16px;
-      }
-
-      .dockBtn {
-        min-height: 44px;
-        padding: 6px 10px;
-      }
-
-      .dockBtn .ms {
-        font-size: 20px;
-      }
-
-      .dockLab {
-        display: none;
+        height: 54px;
+        padding: 4px 16px;
       }
 
       .app {
@@ -1490,10 +1527,7 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
       }
 
-      :root[data-theme="dark"] .mobileDock,
-      :root:not([data-theme="light"]) .mobileDock {
-        box-shadow: 0 -8px 30px rgba(0, 0, 0, .40);
-      }
+
     }
 
     /* --- Reduced Motion for Accessibility --- */
@@ -1533,6 +1567,11 @@
       /* Hide hints on mobile for cleaner UI */
       .hint {
         display: none;
+      }
+
+      /* Hide bottom bar on mobile (use docked buttons instead) */
+      .bottomBar {
+        display: none !important;
       }
 
       /* Topbar Mobile */
@@ -1587,10 +1626,19 @@
       }
 
       /* Cards Mobile */
-      .card {
+      .card,
+      .grid > #customPresetContainer {
         border-radius: 16px;
         width: 100%;
         max-width: 100%;
+        background: var(--surface);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+        padding: 10px;
+        margin-bottom: 12px;
+      }
+      
+      .grid > #customPresetContainer .section {
+        margin-bottom: 0 !important;
       }
 
       .cardHead {
@@ -1946,8 +1994,92 @@
       }
     }
 
+    /* Login Overlay Styles (Global) */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      /* Fallback */
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 9999999;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    :root[data-theme="light"] .login-overlay {
+      background: rgba(243, 244, 246, 0.65);
+    }
+
+    :root[data-theme="dark"] .login-overlay {
+      background: rgba(5, 7, 12, 0.75);
+    }
+
+    .login-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 40px;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
     /* ============= PC: width >= 1024px ============= */
     @media only screen and (min-width: 1024px) {
+
+      /* Custom Preset Styles */
+      #customPresetList:empty {
+        display: none;
+      }
+
+      #customPresetList .chip {
+        padding-right: 6px;
+      }
+
+      #customPresetList .chip .delete-preset {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-left: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        transition: background 0.2s, transform 0.1s;
+      }
+
+      :root[data-theme="light"] #customPresetList .chip .delete-preset {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      #customPresetList .chip .delete-preset:hover {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--err);
+      }
+
+      #customPresetList .chip .delete-preset:active {
+        transform: scale(0.9);
+      }
+
+      #customPresetList .chip .delete-preset .ms {
+        font-size: 14px;
+      }
+
       .app {
         padding: 20px;
         max-width: 1200px;
@@ -2064,3 +2196,126 @@
         background: rgba(155, 155, 155, 0.6);
       }
     }
+
+
+/* =========================================
+   CUSTOM PRESET CARD GRID
+   ========================================= */
+#customPresetList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
+  padding: 8px 0;
+  width: 100%;
+}
+
+.preset-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(130, 130, 130, 0.3);
+  border-radius: 16px;
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.preset-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border-color: var(--primary);
+}
+
+.preset-card .preset-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary);
+  margin-bottom: 12px;
+  background-color: #1a1a1a;
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.preset-card .preset-logo-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  margin-bottom: 12px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--textFade);
+  font-size: 28px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.preset-card .preset-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+}
+
+.preset-card .preset-wm {
+  font-size: 12px;
+  color: var(--textFade);
+  font-weight: 500;
+}
+
+.preset-card .preset-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid rgba(150, 150, 150, 0.4);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.preset-card .preset-delete .ms {
+  font-size: 16px;
+}
+
+.preset-card:hover .preset-delete {
+  opacity: 1;
+}
+
+.preset-card .preset-delete:hover {
+  background: #ff4d4f;
+}
+
+/* Modals z-index fix */
+#confirmActionModal {
+  z-index: 9999;
+}
